@@ -21,7 +21,8 @@ project.add_header_search_paths([
 
 print('Step3: add custom flags')
 project.add_other_cflags([
-	"-DHTTP_CONNECTOR=YES"
+	"-DHTTP_CONNECTOR=YES",
+	"-DUNITY=YES"
 ])
 
 print('Step4: enable C++ exceptions')

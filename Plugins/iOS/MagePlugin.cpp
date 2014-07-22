@@ -39,7 +39,7 @@ const char* MAGE_RPC_Call(mage::RPC* client,
 	Json::Reader reader;
     Json::Value params;
     if (!reader.parse(strParams, params)) {
-		*code = -3;
+		*code = -4;
 		return NULL;
 	}
 	std::string str;
@@ -51,8 +51,8 @@ const char* MAGE_RPC_Call(mage::RPC* client,
 		Json::FastWriter writer;
 		str = writer.write(result);
 	} catch (mage::MageRPCError e) {
-		str = e.what();
-		*code = e.code();
+		str = e.code() + " - " + e.what();
+		*code = -3;
 	} catch (mage::MageErrorMessage e) {
 		str = e.code() + " - " + e.what();
 		*code = -2;

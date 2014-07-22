@@ -29,14 +29,14 @@ namespace MAGE {
         private static extern void MAGE_RPC_ClearSession(IntPtr client);
         
         #else
-        private static void MAGE_free () {}
+        private static void MAGE_free (IntPtr ptr) {}
         private static IntPtr MAGE_RPC_Connect(string mageApplication,
                                                string mageDomain,
                                                string mageProtocol) {
             return IntPtr.Zero;
         }
         private static void MAGE_RPC_Disconnect(IntPtr client) {}
-        private static IntPtr MAGE_RPC_Call(IntPtr client, string methodName, IntPtr ok) {
+        private static IntPtr MAGE_RPC_Call(IntPtr client, string methodName, string parameters, IntPtr ok) {
             return IntPtr.Zero;
         }
         private static void MAGE_RPC_SetSession(IntPtr client, string sessionKey) {}
