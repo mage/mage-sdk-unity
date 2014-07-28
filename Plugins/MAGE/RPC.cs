@@ -8,7 +8,7 @@ namespace MAGE {
         LONGPOLLING
     };
 
-	public class RPC {
+    public class RPC {
 
         // Import from libraries
         #if UNITY_IPHONE

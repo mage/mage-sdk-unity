@@ -2,7 +2,7 @@ using System;
 
 namespace MAGE {
 
-	public class MageError: ApplicationException {
+    public class MageError: ApplicationException {
         public MageError() : base() {}
         public MageError(string message) : base(message) {}
     }

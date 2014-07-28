@@ -20,9 +20,9 @@ public class CustomPostprocessScript : MonoBehaviour
 		UnityEngine.Debug.Log("----Custome Script---Executing post process build phase."); 		
 		Process myCustomProcess = new Process();		
 		myCustomProcess.StartInfo.FileName = "python";
-        myCustomProcess.StartInfo.Arguments = string.Format("Assets/Editor/post_process.py \"{0}\"", pathToBuildProject);
-        myCustomProcess.StartInfo.UseShellExecute = false;
-        myCustomProcess.StartInfo.RedirectStandardOutput = false;
+		myCustomProcess.StartInfo.Arguments = string.Format("Assets/Editor/post_process.py \"{0}\"", pathToBuildProject);
+		myCustomProcess.StartInfo.UseShellExecute = false;
+		myCustomProcess.StartInfo.RedirectStandardOutput = false;
 		myCustomProcess.Start(); 
 		myCustomProcess.WaitForExit();
 		UnityEngine.Debug.Log("----Custome Script--- Finished executing post process build phase.");  
