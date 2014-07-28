@@ -1,32 +1,56 @@
-using UnityEngine;
+﻿using UnityEngine;
 using System;
+using System.Collections;
 
+/*
+ * To receive the events from the server,
+ * your NetworkController script should be attached to
+ * a GameObject called Network.
+ */
 public class NetworkController : MonoBehaviour {
 
-    private MAGE.RPC client;
+    public static NetworkController instance;
+
+    private MAGE.RPC client = null;
     private bool isAuthenticated = false;
+    private bool shouldRunPollingCoroutine = false;
 
-    private static string extractSessionKey(JSONObject result) {
-        if (!result.HasField("response")) {
-            return null;
+    void Awake() {
+        if (instance) {
+            DestroyImmediate(gameObject);
+            return;
         }
 
-        JSONObject response = result.GetField("response");
-        if (!response.IsObject || !response.HasField("session")) {
-            return null;
+        instance = this;
+
+        DontDestroyOnLoad(this);
+    }
+
+    private IEnumerator PollingCoroutine(MAGE.Transport transport, float duration = 0.0f) {
+        while (shouldRunPollingCoroutine) {
+            client.PullEvents(transport);
+
+            if (duration > 0.0f) {
+                yield return new WaitForSeconds(duration);
+            } else {
+                yield return null;
+            }
+        }
+    }
+
+    private void StartPolling(MAGE.Transport transport = MAGE.Transport.SHORTPOLLING) {
+        shouldRunPollingCoroutine = true;
+
+        float duration = 0.0f;
+        if (transport == MAGE.Transport.SHORTPOLLING) {
+            duration = 5.0f;
         }
 
-        JSONObject session = response.GetField("session");
-        if (!session.IsObject || !session.HasField("key")) {
-            return null;
-        }
+        StartCoroutine(PollingCoroutine(transport, duration));
+    }
 
-        JSONObject key = session.GetField("key");
-        if (!key.IsString) {
-            return null;
-        }
-
-        return key.str;
+    private void StopPolling() {
+        shouldRunPollingCoroutine = false;
     }
 
     private void Login(Action callback) {
@@ -51,23 +75,28 @@ public class NetworkController : MonoBehaviour {
                 return;
             }
 
-            if (result == null) {
-                return;
-            }
-            
-            JSONObject parsedResult = new JSONObject(result);
-            string sessionKey = extractSessionKey(parsedResult);
-            if (sessionKey == null) {
-                return;
-            }
-            
-            client.SetSession(sessionKey);
+            StartPolling();
+
             isAuthenticated = true;
             callback();
         });
     }
 
-    void Start () {
+    void Call(string methodName,
+             JSONObject parameters,
+             Action<ApplicationException,string> callback) {
+        Login (() => {
+            client.Call(methodName, parameters, callback);
+        });
+    }
+
+    void OnDestroy() {
+        if (client != null) {
+            client.Disconnect();
+        }
+    }
+
+    void Start() {
         try {
             client = new MAGE.RPC("game", "127.0.0.1:8080");
         } catch (ApplicationException e) {
@@ -75,19 +104,28 @@ public class NetworkController : MonoBehaviour {
             return;
         }
 
-        Login (() => {
-            JSONObject parameters = new JSONObject(JSONObject.Type.OBJECT);
-            client.Call ("mymodule.mycommand", parameters, (error, result) => {
-                if (error != null) {
-                    Debug.Log (error.Message);
-                    return;
-                }
+        JSONObject parameters = new JSONObject(JSONObject.Type.OBJECT);
+        Call ("mymodule.mycommand", parameters, (error, result) => {
+            if (error != null) {
+                Debug.Log (error.Message);
+                return;
+            }
 
-                Debug.Log("Result: " + result);
-            });
+            Debug.Log("Result: " + result);
         });
+    }
 
-        client.Disconnect();
-	}
+    public void ReceiveEvent(string message) {
+        JSONObject receivedEvent = new JSONObject(message);
+
+        if (!receivedEvent.HasField("name") || !receivedEvent.HasField("data")) {
+            Debug.LogError("The received event has an invalid format.");
+            return;
+        }
+
+        string name = receivedEvent.GetField("name").str;
+        JSONObject data = receivedEvent.GetField("data");
+
+        Debug.Log ("Receive Event: " + name + " - " + data.Print(true));
+    }
 }
-

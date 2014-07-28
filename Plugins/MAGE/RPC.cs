@@ -3,6 +3,11 @@ using System.Runtime.InteropServices;
 
 namespace MAGE {
 
+    public enum Transport {
+        SHORTPOLLING = 0,
+        LONGPOLLING
+    };
+
 	public class RPC {
 
         // Import from libraries
@@ -27,6 +32,9 @@ namespace MAGE {
         
         [DllImport ("__Internal")]
         private static extern void MAGE_RPC_ClearSession(IntPtr client);
+
+        [DllImport ("__Internal")]
+        private static extern void MAGE_RPC_PullEvents(IntPtr client, int transport);
         
         #else
         private static void MAGE_free (IntPtr ptr) {}
@@ -41,6 +49,7 @@ namespace MAGE {
         }
         private static void MAGE_RPC_SetSession(IntPtr client, string sessionKey) {}
         private static void MAGE_RPC_ClearSession(IntPtr client) {}
+        private static void MAGE_RPC_PullEvents(IntPtr client, int transport) {}
         #endif
 
         // Attributes
@@ -75,7 +84,7 @@ namespace MAGE {
             Marshal.FreeCoTaskMem(pCode);
 
             // JSON parsing error
-            if (code[0] == -3) {
+            if (code[0] == -4) {
                 throw new ApplicationException("Unable to parse the parameters");
             }
 
@@ -99,7 +108,12 @@ namespace MAGE {
             }
 
             // RPC error
-            throw new MageRPCError(code[0], result);
+            if(code[0] == -3) {
+                int index = result.IndexOf(" - ");
+                throw new MageRPCError(result.Substring(0, index), result.Substring(index + 3));
+            }
+
+            throw new ApplicationException("Unexpected error");
         }
 
         public void Call(string methodName,
@@ -123,7 +137,9 @@ namespace MAGE {
             MAGE_RPC_ClearSession(client);
         }
 
+        public void PullEvents(Transport transport) {
+            MAGE_RPC_PullEvents(client, (int)transport);
+        }
     }
 
 }
-

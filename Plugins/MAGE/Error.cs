@@ -8,13 +8,13 @@ namespace MAGE {
     }
 
     public class MageRPCError: MageError {
-        public MageRPCError(int code, string message) : base(message) {
+        public MageRPCError(string code, string message) : base(message) {
             errorCode = code;
         }
-        public int code() {
+        public string code() {
             return errorCode;
         }
-        private int errorCode;
+        private string errorCode;
     }
 
     public class MageErrorMessage: MageError {
@@ -28,4 +28,3 @@ namespace MAGE {
     }
 
 }
-
