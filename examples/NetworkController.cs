@@ -13,7 +13,6 @@ public class NetworkController : MonoBehaviour {
 
     private MAGE.RPC client = null;
     private bool isAuthenticated = false;
-    private bool shouldRunPollingCoroutine = false;
 
     void Awake() {
         if (instance) {
@@ -24,33 +23,6 @@ public class NetworkController : MonoBehaviour {
         instance = this;
 
         DontDestroyOnLoad(this);
-    }
-
-    private IEnumerator PollingCoroutine(MAGE.Transport transport, float duration = 0.0f) {
-        while (shouldRunPollingCoroutine) {
-            client.PullEvents(transport);
-
-            if (duration > 0.0f) {
-                yield return new WaitForSeconds(duration);
-            } else {
-                yield return null;
-            }
-        }
-    }
-
-    private void StartPolling(MAGE.Transport transport = MAGE.Transport.SHORTPOLLING) {
-        shouldRunPollingCoroutine = true;
-
-        float duration = 0.0f;
-        if (transport == MAGE.Transport.SHORTPOLLING) {
-            duration = 5.0f;
-        }
-
-        StartCoroutine(PollingCoroutine(transport, duration));
-    }
-
-    private void StopPolling() {
-        shouldRunPollingCoroutine = false;
     }
 
     private void Login(Action callback) {
@@ -75,7 +47,7 @@ public class NetworkController : MonoBehaviour {
                 return;
             }
 
-            StartPolling();
+            client.StartPolling();
 
             isAuthenticated = true;
             callback();

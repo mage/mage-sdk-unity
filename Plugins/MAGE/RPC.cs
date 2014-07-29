@@ -54,6 +54,7 @@ namespace MAGE {
 
         // Attributes
         private IntPtr client;
+        private PollingJob pollingJob = null;
 
         // Methods
         public RPC(string mageApplication,
@@ -140,6 +141,21 @@ namespace MAGE {
         public void PullEvents(Transport transport) {
             MAGE_RPC_PullEvents(client, (int)transport);
         }
-    }
 
+        public void StartPolling() {
+            if (pollingJob != null) {
+                return;
+            }
+            pollingJob = new PollingJob(this);
+            pollingJob.Start();
+        }
+
+        public void StopPolling() {
+            if (pollingJob == null) {
+                return;
+            }
+            pollingJob.Abort();
+            pollingJob = null;
+        }
+    }
 }
