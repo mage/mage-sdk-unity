@@ -34,7 +34,7 @@ class UnityEventObserver : public mage::EventObserver {
             std::string str = writer.write(event);
             UnitySendMessage("Network", "ReceiveEvent", str.c_str());
 
-            if (name == "session:set") {
+            if (name == "session.set") {
                 HandleSessionSet(data);
             }
         }
