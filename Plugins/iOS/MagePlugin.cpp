@@ -15,7 +15,7 @@ extern "C" {
                         int* code);
     void MAGE_RPC_SetSession(mage::RPC* client, const char* sessionKey);
     void MAGE_RPC_ClearSession(mage::RPC* client);
-    void MAGE_RPC_PullEvents(mage::RPC* client, int transport);
+    int MAGE_RPC_PullEvents(mage::RPC* client, int transport);
 }
 
 void MAGE_free (void* ptr) {
@@ -110,7 +110,15 @@ void MAGE_RPC_ClearSession(mage::RPC* client) {
     client->ClearSession();
 }
 
-void MAGE_RPC_PullEvents(mage::RPC* client, int transport) {
-    client->PullEvents((mage::Transport)transport);
+int MAGE_RPC_PullEvents(mage::RPC* client, int transport) {
+    try {
+        client->PullEvents((mage::Transport)transport);
+    } catch (mage::MageClientError error) {
+        return -2;
+    } catch (...) {
+        return -1;
+    }
+
+    return 0;
 }
 

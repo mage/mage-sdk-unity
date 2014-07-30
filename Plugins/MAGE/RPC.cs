@@ -34,7 +34,7 @@ namespace MAGE {
         private static extern void MAGE_RPC_ClearSession(IntPtr client);
 
         [DllImport ("__Internal")]
-        private static extern void MAGE_RPC_PullEvents(IntPtr client, int transport);
+        private static extern int MAGE_RPC_PullEvents(IntPtr client, int transport);
         
         #else
         private static void MAGE_free (IntPtr ptr) {}
@@ -139,7 +139,17 @@ namespace MAGE {
         }
 
         public void PullEvents(Transport transport) {
-            MAGE_RPC_PullEvents(client, (int)transport);
+            int errorCode = MAGE_RPC_PullEvents(client, (int)transport);
+            switch (errorCode) {
+            case 0:
+                return;
+            case -1:
+                throw new ApplicationException("The MAGE plugin has encountered an unexpected error.");
+            case -2:
+                throw new ApplicationException("The MAGE plugin has encountered a connection error.");
+            default:
+                throw new ApplicationException("Unexpected exception.");
+            }
         }
 
         public void StartPolling() {
