@@ -135,6 +135,7 @@ namespace MAGE {
         }
 
         public void ClearSession() {
+            StopPolling();
             MAGE_RPC_ClearSession(client);
         }
 
