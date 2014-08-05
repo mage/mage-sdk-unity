@@ -22,22 +22,6 @@ More specifically, it allows you to call any user commands made available on a g
 Installation
 -------------
 
-### Requirements
-
-#### [mage-sdk-cpp](https://github.com/mage/mage-sdk-cpp)
-
-This plugin uses the mage-sdk-cpp, you need to download the last version and build the library.
-
-```bash
-git clone https://github.com/mage/mage-sdk-cpp.git
-cd mage-sdk-cpp
-git submodule update --init
-make ios-unity
-```
-
-You will obtain the following file: `platforms/ios/build/UnityRelease-iphoneos/libmage-sdk.a`.
-You have to put it in the `Assets/Plugins/iOS` directory of your Unity project.
-
 ### Setup
 
 ```bash
@@ -45,21 +29,32 @@ git clone https://github.com/MiLk/mage-sdk-unity.git
 cd mage-sdk-unity
 ```
 
-### Integration in your Unity project
+### Build
 
-#### Plugin
+A script is provided to help you to build the dependencies
+and copy the files into your Unity project directory.
 
-Copy all the files from the `Plugin` directory to the `Assets/Plugin` directory of your project.
+Run the following command:
+```bash
+./scripts/build.sh path/to/your/unity/project
+```
 
-It contains the `MAGE` namespace that you can use in your project.
+#### [mage-sdk-cpp](https://github.com/mage/mage-sdk-cpp)
 
-#### Editor
+This plugin uses the mage-sdk-cpp, it will be downloaded by the build script.
 
-Copy all the files from the `Editor` directory to the `Assets/Editor` directory of your project.
+If you already have it on your computer, you can use the `MAGE_SDK_CPP_PATH`
+environment variable to specify the path to your installation.
 
-It contains scripts to automate some steps of the build.
+```bash
+export MAGE_SDK_CPP_PATH=path/to/mage-sdk-cpp
+./scripts/build.sh path/to/your/unity/project
+```
 
-You have to edit the `Editor/post_process.py` file to use your path to the `mage-sdk-cpp` directory.
+#### Integration in your Unity project
+
+All the files from the `Editor` and `Plugins` directories will be copied.
+
 
 Usage
 -----

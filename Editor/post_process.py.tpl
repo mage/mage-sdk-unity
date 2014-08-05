@@ -14,9 +14,9 @@ project.add_file('System/Library/Frameworks/AdSupport.framework', tree='SDKROOT'
 
 print('Step2: add search paths')
 project.add_header_search_paths([
-	"path/to/mage-sdk-cpp/src",
-	"path/to/mage-sdk-cpp/vendor/libjson-rpc-cpp/src",
-	"path/to/mage-sdk-cpp/platforms/externals/curl/include/ios"
+	"MAGE_SDK_CPP_PATH/src",
+	"MAGE_SDK_CPP_PATH/vendor/libjson-rpc-cpp/src",
+	"MAGE_SDK_CPP_PATH/platforms/externals/curl/include/ios"
 ])
 
 print('Step3: add custom flags')
