@@ -39,7 +39,8 @@ popd >/dev/null
 
 cp "${MAGE_SDK_CPP_PATH}"/platforms/ios/build/UnityRelease-iphoneos/libmage-sdk.a Plugins/iOS/
 
-mkdir -p "${project_directory}/Assets/{Editor,Plugins}"
+mkdir -p "${project_directory}/Assets/Editor"
+mkdir -p "${project_directory}/Assets/Plugins"
 
 for file in Editor/*.{cs,py}; do
     cp ${file} "${project_directory}/Assets/Editor/"
@@ -47,7 +48,7 @@ done
 
 sed "s#MAGE_SDK_CPP_PATH#${MAGE_SDK_CPP_PATH}#g" Editor/post_process.py.tpl > "${project_directory}/Assets/Editor/post_process.py"
 
-cp -R Plugins/ "${project_directory}/Plugins/"
+cp -R Plugins/ "${project_directory}/Assets/Plugins/"
 
 echo "MAGE SDK files copied to ${project_directory}."
 
