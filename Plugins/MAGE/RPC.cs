@@ -11,7 +11,7 @@ namespace MAGE {
     public class RPC {
 
         // Import from libraries
-        #if UNITY_IPHONE
+        #if UNITY_IPHONE && !UNITY_EDITOR
         [DllImport ("__Internal")]
         private static extern void MAGE_free (IntPtr ptr);
         
@@ -49,7 +49,9 @@ namespace MAGE {
         }
         private static void MAGE_RPC_SetSession(IntPtr client, string sessionKey) {}
         private static void MAGE_RPC_ClearSession(IntPtr client) {}
-        private static void MAGE_RPC_PullEvents(IntPtr client, int transport) {}
+        private static int MAGE_RPC_PullEvents(IntPtr client, int transport) {
+            return 0;
+        }
         #endif
 
         // Attributes

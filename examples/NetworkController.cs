@@ -26,6 +26,10 @@ public class NetworkController : MonoBehaviour {
     }
 
     private void Login(Action callback) {
+        if (client == null) {
+            return;
+        }
+
         if (isAuthenticated) {
             callback();
             return;
@@ -99,5 +103,18 @@ public class NetworkController : MonoBehaviour {
         JSONObject data = receivedEvent.GetField("data");
 
         Debug.Log ("Receive Event: " + name + " - " + data.Print(true));
+    }
+
+    void OnApplicationPause(bool paused) {
+        if (client == null) {
+            return;
+        }
+
+        if (paused) {
+            // Stop the polling thread when the app goes in background
+            client.StopPolling();
+        } else {
+            Login();
+        }
     }
 }
