@@ -218,6 +218,10 @@ namespace MAGE {
                 httpRequest.AddHeader("X-MAGE-SESSION", sessionKey);
             }
             httpRequest.Send( ( request ) => {
+                if (result == null || result.response == null) {
+                    return;
+                }
+
                 JSONObject result = request.response.Json;
                 if (result.IsNull) {
                     callback(new ApplicationException("Could not parse JSON response."), null);
