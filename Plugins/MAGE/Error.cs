@@ -18,7 +18,7 @@ namespace MAGE {
     }
 
     public class MageErrorMessage: MageError {
-        public MageErrorMessage(string code, string message) : base(message) {
+        public MageErrorMessage(string code, string message = "MAGE error message received") : base(message) {
             errorCode = code;
         }
         public string code() {

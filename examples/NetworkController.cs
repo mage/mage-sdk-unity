@@ -60,7 +60,7 @@ public class NetworkController : MonoBehaviour {
 
     void Call(string methodName,
              JSONObject parameters,
-             Action<ApplicationException,string> callback) {
+             Action<ApplicationException, JSONObject> callback) {
         Login (() => {
             client.Call(methodName, parameters, callback);
         });
