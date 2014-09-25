@@ -34,10 +34,15 @@ fi
 git submodule update --init
 
 make ios-unity
+make android-unity
 
 popd >/dev/null
 
+mkdir -p Plugins/iOS
+mkdir -p Plugins/Android
+
 cp "${MAGE_SDK_CPP_PATH}"/platforms/ios/build/UnityRelease-iphoneos/libmage-sdk.a Plugins/iOS/
+cp "${MAGE_SDK_CPP_PATH}"/platforms/android-unity/libs/armeabi/libmage.so Plugins/Android/
 
 mkdir -p "${project_directory}/Assets/Editor"
 mkdir -p "${project_directory}/Assets/Plugins"

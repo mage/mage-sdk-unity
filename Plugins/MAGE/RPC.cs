@@ -1,13 +1,13 @@
-#if UNITY_IPHONE && !UNITY_EDITOR
+#if (UNITY_IPHONE || UNITY_ANDROID) && !UNITY_EDITOR
 #define MOBILE
 #endif
 
 using System;
 using UnityEngine;
+using System.Collections;
 #if MOBILE
 using System.Runtime.InteropServices;
 #else
-using System.Collections;
 using System.Collections.Generic;
 #endif
 
@@ -33,7 +33,6 @@ namespace MAGE {
         [DllImport ("__Internal")]
         private static extern void MAGE_RPC_Disconnect(IntPtr client);
 
-
         [DllImport ("__Internal")]
         private static extern IntPtr MAGE_RPC_Call(IntPtr client, string methodName, string parameters, IntPtr ok);
 
@@ -45,6 +44,33 @@ namespace MAGE {
 
         [DllImport ("__Internal")]
         private static extern int MAGE_RPC_PullEvents(IntPtr client, int transport);
+
+        #elif UNITY_ANDROID && !UNITY_EDITOR
+        [DllImport ("mage")]
+        private static extern void MAGE_free (IntPtr ptr);
+
+        [DllImport ("mage")]
+        private static extern IntPtr MAGE_RPC_Connect(string mageApplication,
+                                                      string mageDomain,
+                                                      string mageProtocol);
+
+        [DllImport ("mage")]
+        private static extern void MAGE_RPC_Disconnect(IntPtr client);
+
+        [DllImport ("mage")]
+        private static extern IntPtr MAGE_RPC_Call(IntPtr client, string methodName, string parameters, IntPtr ok);
+
+        [DllImport ("mage")]
+        private static extern void MAGE_RPC_SetSession(IntPtr client, string sessionKey);
+
+        [DllImport ("mage")]
+        private static extern void MAGE_RPC_ClearSession(IntPtr client);
+
+        [DllImport ("mage")]
+        private static extern int MAGE_RPC_PullEvents(IntPtr client, int transport);
+
+        [DllImport ("mage")]
+        private static extern void MAGE_SendAllMessages();
 
         #else
         private static void MAGE_free (IntPtr ptr) {}
@@ -65,6 +91,7 @@ namespace MAGE {
         #endif
 
         // Attributes
+        private MonoBehaviour parent;
 #if MOBILE
         private IntPtr client;
         private PollingJob pollingJob = null;
@@ -75,13 +102,15 @@ namespace MAGE {
         private string sessionKey = null;
         private List<string> confirmIds;
 
-        private bool shouldPoll = true;
+        private bool shouldPoll = false;
 #endif
 
         // Methods
-        public RPC(string mageApplication,
+        public RPC(MonoBehaviour parent,
+                   string mageApplication,
                    string mageDomain = "localhost:8080",
                    string mageProtocol = "http") {
+            this.parent = parent;
 #if MOBILE
             client = MAGE_RPC_Connect(mageApplication, mageDomain, mageProtocol);
             if (client == IntPtr.Zero) {
@@ -218,10 +247,6 @@ namespace MAGE {
                 httpRequest.AddHeader("X-MAGE-SESSION", sessionKey);
             }
             httpRequest.Send( ( request ) => {
-                if (result == null || result.response == null) {
-                    return;
-                }
-
                 JSONObject result = request.response.Json;
                 if (result.IsNull) {
                     callback(new ApplicationException("Could not parse JSON response."), null);
@@ -365,6 +390,15 @@ namespace MAGE {
         }
 #endif
 
+#if UNITY_ANDROID && !UNITY_EDITOR
+        IEnumerator PollingCoroutine() {
+            while (pollingJob != null) {
+                MAGE_SendAllMessages();
+                yield return new WaitForSeconds(1.0f);
+            }
+        }
+#endif
+
         public void StartPolling() {
 #if MOBILE
             if (pollingJob != null) {
@@ -379,6 +413,9 @@ namespace MAGE {
 
             shouldPoll = true;
             Poll ();
+#endif
+#if UNITY_ANDROID && !UNITY_EDITOR
+            parent.StartCoroutine(PollingCoroutine());
 #endif
         }
 

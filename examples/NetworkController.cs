@@ -74,7 +74,7 @@ public class NetworkController : MonoBehaviour {
 
     void Start() {
         try {
-            client = new MAGE.RPC("game", "127.0.0.1:8080");
+            client = new MAGE.RPC(this, "game", "127.0.0.1:8080");
         } catch (ApplicationException e) {
             Debug.Log (e.Message);
             return;
