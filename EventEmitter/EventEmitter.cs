@@ -18,6 +18,17 @@ public class EventEmitter<T> {
 	}
 
 	//
+	public void once(string eventTag, Action<object, T> handler)
+	{
+		Action<object, T> handlerWrapper = (object obj, T arguments) => {
+			eventsList.RemoveHandler(eventTags[eventTag], handlerWrapper);
+			handler(obj, arguments);
+		};
+
+		on(eventTag, handlerWrapper);
+	}
+
+	//
 	public void emit(string eventTag, object sender, T arguments)
 	{
 		if (!eventTags.ContainsKey(eventTag)) {
@@ -30,6 +41,6 @@ public class EventEmitter<T> {
 	
 	public void emit(string eventTag, T arguments)
 	{
-		emit (eventTag, null, arguments);
+		emit(eventTag, null, arguments);
 	}
 }
