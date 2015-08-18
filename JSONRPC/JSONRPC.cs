@@ -10,8 +10,8 @@ public class JSONRPC {
 	private string _endpoint;
 
 	// Basic authentication
-	private string _username;
-	private string _password;
+	private string _username = null;
+	private string _password = null;
 
 	public void setEndpoint(string endpoint, string username = null, string password = null) {
 		_endpoint = endpoint;
@@ -20,6 +20,18 @@ public class JSONRPC {
 	}
 
 	public void call(string methodName, JObject parameters, Dictionary<string, string> headers, Action<Exception, JObject> cb) {
+		call(JValue.CreateNull(), methodName, parameters, headers, cb);
+	}
+
+	public void call(string id, string methodName, JObject parameters, Dictionary<string, string> headers, Action<Exception, JObject> cb) {
+		call(new JValue(id), methodName, parameters, headers, cb);
+	}
+
+	public void call(int id, string methodName, JObject parameters, Dictionary<string, string> headers, Action<Exception, JObject> cb) {
+		call(new JValue(id), methodName, parameters, headers, cb);
+	}
+
+	public void call(JValue id, string methodName, JObject parameters, Dictionary<string, string> headers, Action<Exception, JObject> cb) {
 		// Make sure the endpoint is set
 		if (string.IsNullOrEmpty(_endpoint)) {
 			cb(new Exception("Endpoint has not been set"), null);
@@ -28,8 +40,9 @@ public class JSONRPC {
 
 		// Setup JSON request object
 		JObject requestObject = new JObject ();
-		requestObject.Add("id", new JValue(1));
 		requestObject.Add("jsonrpc", new JValue("2.0"));
+
+		requestObject.Add("id", id);
 		requestObject.Add("method", new JValue(methodName));
 		requestObject.Add("params", parameters);
 
@@ -51,7 +64,7 @@ public class JSONRPC {
 		}
 
 		// Send HTTP post to JSON rpc endpoint
-		HTTPRequest.Post (_endpoint, "application/json", postData, _headers, (Exception requestError, string responseString) => {
+		HTTPRequest.Post(_endpoint, "application/json", postData, _headers, (Exception requestError, string responseString) => {
 			// Deserialize the JSON response
 			JObject responseObject;
 			try {
