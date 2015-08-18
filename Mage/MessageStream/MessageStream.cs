@@ -126,13 +126,9 @@ public class MessageStream {
 			return;
 		}
 
-		try {
-			JObject messages = JObject.Parse(messagesString);
-			addMessages(messages);
-			processMessages();
-		} catch (Exception error) {
-			throw new Exception("Failed to process messages: " + error.ToString());
-		}
+		JObject messages = JObject.Parse(messagesString);
+		addMessages(messages);
+		processMessages();
 	}
 
 
@@ -181,7 +177,7 @@ public class MessageStream {
 	// Process the message queue till we reach the end or a gap
 	private void processMessages() {
 		// Process all ordered messages in the order they appear
-		for (currentMessageId = currentMessageId; currentMessageId <= largestMessageId; currentMessageId += 1) {
+		while (currentMessageId <= largestMessageId) {
 			// Check if the next messageId exists
 			if (!messageQueue.ContainsKey(currentMessageId)) {
 				break;
@@ -191,6 +187,8 @@ public class MessageStream {
 			mage.eventManager.emitEventList((JArray)messageQueue[currentMessageId]);
 			confirmIds.Add(currentMessageId.ToString());
 			messageQueue.Remove(currentMessageId);
+
+			currentMessageId += 1;
 		}
 
 		// Finally emit any events that don't have an ID and thus don't need confirmation and lack order

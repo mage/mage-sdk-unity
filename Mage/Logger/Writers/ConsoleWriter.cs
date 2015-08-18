@@ -11,8 +11,6 @@ public class ConsoleWriter {
 	}
 
 	public ConsoleWriter() {
-		ConsoleWriter self = this;
-
 		Logger.logEmitter.on ("verbose", (object sender, LogEntry logEntry) => {
 			Debug.Log (makeLogString("verbose", logEntry.context, logEntry.message));
 			if (logEntry.data != null) {

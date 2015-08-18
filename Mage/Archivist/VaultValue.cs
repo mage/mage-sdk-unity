@@ -8,7 +8,7 @@ public class VaultValue {
 	
 	private JToken _data;
 	private string _mediaType;
-	private uint _expirationTime;
+	//private uint _expirationTime;
 
 
 	//
@@ -30,7 +30,7 @@ public class VaultValue {
 	
 	public JToken data { get { return _data; } }
 	public string mediaType { get { return _mediaType; } }
-	public uint expirationTime { get { return _expirationTime; } }
+	//public uint expirationTime { get { return _expirationTime; } }
 
 
 	//
@@ -203,7 +203,6 @@ public class VaultValue {
 			break;
 		default:
 			throw new Exception("VaultValue.applyDiff - Unsupported operation: " + operation);
-			break;
 		}
 	}
 }
