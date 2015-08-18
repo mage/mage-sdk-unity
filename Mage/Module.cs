@@ -4,6 +4,13 @@ using System.Collections.Generic;
 using Newtonsoft.Json.Linq;
 
 
+public class UsercommandStatus {
+	public bool done = false;
+	public Exception error = null;
+	public JToken result = null;
+}
+
+
 public class Module<T> : Singleton<T> where T : class, new() {
 	//
 	protected Mage mage { get { return Mage.instance; } }
@@ -46,19 +53,25 @@ public class Module<T> : Singleton<T> where T : class, new() {
 	//
 	protected virtual string commandPrefix { get { return null; } }
 	protected virtual List<string> commands { get { return null; } }
-	private Dictionary<string, Action<JObject, Action<Exception, JToken>>> commandHandlers;
-	public Action<JObject, Action<Exception, JToken>> this[string commandName] {
-		get {
-			return commandHandlers[commandName];
-		}
+	private Dictionary<string, Action<JObject, Action<Exception, JToken>>> commandHandlerActions;
+	private Dictionary<string, Func<JObject, UsercommandStatus>> commandHandlerFuncs;
+	
+	public void command(string commandName, JObject arguments, Action<Exception, JToken> cb) {
+		commandHandlerActions[commandName](arguments, cb);
 	}
+	
+	public UsercommandStatus command(string commandName, JObject arguments) {
+		return commandHandlerFuncs[commandName](arguments);
+	}
+	
 	public void setupUsercommands (Action<Exception> cb) {
 		logger.info ("Setting up usercommands");
-
-		commandHandlers = new Dictionary<string, Action<JObject, Action<Exception, JToken>>> ();
-
-		Async.each<string> (commands, (string command, Action<Exception> callback) => {
-			commandHandlers.Add(command, (JObject arguments, Action<Exception, JToken> commandCb) => {
+		
+		commandHandlerActions = new Dictionary<string, Action<JObject, Action<Exception, JToken>>> ();
+		commandHandlerFuncs = new Dictionary<string, Func<JObject, UsercommandStatus>> ();
+		
+		foreach (string command in commands) {
+			commandHandlerActions.Add(command, (JObject arguments, Action<Exception, JToken> commandCb) => {
 				mage.rpcClient.call(commandPrefix + "." + command, arguments, (Exception error, JToken result) => {
 					try {
 						commandCb(error, result);
@@ -67,8 +80,20 @@ public class Module<T> : Singleton<T> where T : class, new() {
 					}
 				});
 			});
-
-			callback(null);
-		}, cb);
+			
+			commandHandlerFuncs.Add(command, (JObject arguments) => {
+				UsercommandStatus commandStatus = new UsercommandStatus();
+				
+				mage.rpcClient.call(commandPrefix + "." + command, arguments, (Exception error, JToken result) => {
+					commandStatus.error = error;
+					commandStatus.result = result;
+					commandStatus.done = true;
+				});
+				
+				return commandStatus;
+			});
+		}
+		
+		cb (null);
 	}
 }

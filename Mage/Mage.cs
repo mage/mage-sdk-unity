@@ -1,10 +1,16 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Reflection;
 
 using Newtonsoft.Json.Linq;
 
-using UnityEngine;
+
+public class MageSetupStatus {
+	public bool done = false;
+	public Exception error = null;
+}
+
 
 public class Mage : Singleton<Mage> {
 	//
@@ -83,5 +89,22 @@ public class Mage : Singleton<Mage> {
 			_logger.info("Setup complete");
 			cb(null);
 		});
+	}
+	
+	public IEnumerator setupTask (List<string> moduleNames, Action<Exception> cb) {
+		// Execute async setup function
+		MageSetupStatus setupStatus = new MageSetupStatus ();
+		setup(moduleNames, (Exception error) => {
+			setupStatus.error = error;
+			setupStatus.done = true;
+		});
+
+		// Wait for setup to return
+		while (!setupStatus.done) {
+			yield return null;
+		}
+
+		// Call callback with error if there is one
+		cb (setupStatus.error);
 	}
 }
