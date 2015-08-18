@@ -47,8 +47,7 @@ public class VaultValue {
 			return parent[int.Parse(propertyName)];
 		}
 
-		// Error
-		return null;
+		throw new Exception("Invalid property '" + propertyName + "' on object: " + parent.ToString());
 	}
 
 
@@ -206,8 +205,6 @@ public class VaultValue {
 			throw new Exception("VaultValue.applyDiff - Unsupported operation: " + operation);
 			break;
 		}
-
-		UnityEngine.Debug.Log (value);
 	}
 }
  
