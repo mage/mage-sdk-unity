@@ -63,35 +63,39 @@ public class Module<T> : Singleton<T> where T : class, new() {
 	public UsercommandStatus command(string commandName, JObject arguments) {
 		return commandHandlerFuncs[commandName](arguments);
 	}
+
+	private void registerCommand(string command) {
+		commandHandlerActions.Add(command, (JObject arguments, Action<Exception, JToken> commandCb) => {
+			mage.rpcClient.call(commandPrefix + "." + command, arguments, (Exception error, JToken result) => {
+				try {
+					commandCb(error, result);
+				} catch (Exception callbackError) {
+					logger.data(callbackError).critical("Uncaught exception:");
+				}
+			});
+		});
+		
+		commandHandlerFuncs.Add(command, (JObject arguments) => {
+			UsercommandStatus commandStatus = new UsercommandStatus();
+
+			mage.rpcClient.call(commandPrefix + "." + command, arguments, (Exception error, JToken result) => {
+				commandStatus.error = error;
+				commandStatus.result = result;
+				commandStatus.done = true;
+			});
+			
+			return commandStatus;
+		});
+	}
 	
 	public void setupUsercommands (Action<Exception> cb) {
 		logger.info ("Setting up usercommands");
 		
 		commandHandlerActions = new Dictionary<string, Action<JObject, Action<Exception, JToken>>> ();
 		commandHandlerFuncs = new Dictionary<string, Func<JObject, UsercommandStatus>> ();
-		
+
 		foreach (string command in commands) {
-			commandHandlerActions.Add(command, (JObject arguments, Action<Exception, JToken> commandCb) => {
-				mage.rpcClient.call(commandPrefix + "." + command, arguments, (Exception error, JToken result) => {
-					try {
-						commandCb(error, result);
-					} catch (Exception callbackError) {
-						logger.data(callbackError).critical("Uncaught exception:");
-					}
-				});
-			});
-			
-			commandHandlerFuncs.Add(command, (JObject arguments) => {
-				UsercommandStatus commandStatus = new UsercommandStatus();
-				
-				mage.rpcClient.call(commandPrefix + "." + command, arguments, (Exception error, JToken result) => {
-					commandStatus.error = error;
-					commandStatus.result = result;
-					commandStatus.done = true;
-				});
-				
-				return commandStatus;
-			});
+			registerCommand(command);
 		}
 		
 		cb (null);

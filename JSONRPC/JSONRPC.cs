@@ -65,6 +65,11 @@ public class JSONRPC {
 
 		// Send HTTP post to JSON rpc endpoint
 		HTTPRequest.Post(_endpoint, "application/json", postData, _headers, (Exception requestError, string responseString) => {
+			if (requestError != null) {
+				cb(requestError, null);
+				return;
+			}
+
 			// Deserialize the JSON response
 			JObject responseObject;
 			try {

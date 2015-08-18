@@ -33,7 +33,7 @@ public class RPCClient : JSONRPC {
 		logger.verbose("[" + methodName + "] send to remote");
 
 		// Make the RPC call
-		this.call (methodName, parameters, headers, (Exception error, JObject responseObject) => {
+		this.call (1, methodName, parameters, headers, (Exception error, JObject responseObject) => {
 			//
 			if (error != null) {
 				logger.verbose("[" + methodName + "] call error");
