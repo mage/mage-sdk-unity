@@ -58,9 +58,9 @@ public class ConsoleWriter {
 			if (logEntry.data != null) {
 				if (logEntry.data is Exception) {
 					Exception excpt = logEntry.data as Exception;
-					Debug.LogError(excpt.ToString() + excpt.StackTrace.ToString());
+					Debug.LogError(excpt.ToString() + ":\n" + excpt.StackTrace.ToString());
 				} else {
-					Debug.LogError (logEntry.data);
+					Debug.LogError(logEntry.data);
 				}
 			}
 		});
