@@ -56,7 +56,7 @@ public class ConsoleWriter {
 		Logger.logEmitter.on ("critical", (object sender, LogEntry logEntry) => {
 			Debug.LogError (makeLogString("critical", logEntry.context, logEntry.message));
 			if (logEntry.data != null) {
-				if (logEntry.data is Exception) {
+				if (logEntry.data is Exception && (logEntry.data as Exception).StackTrace != null) {
 					Exception excpt = logEntry.data as Exception;
 					Debug.LogError(excpt.ToString() + ":\n" + excpt.StackTrace.ToString());
 				} else {
