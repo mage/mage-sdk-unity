@@ -15,6 +15,7 @@ public class MageSetupStatus {
 public class Mage : Singleton<Mage> {
 	//
 	public EventManager eventManager;
+	public Session session;
 	public RPCClient rpcClient;
 	public MessageStream messageStream;
 	public Archivist archivist;
@@ -42,10 +43,11 @@ public class Mage : Singleton<Mage> {
 
 	//
 	public Mage() {
-		eventManager = new EventManager ();
-		rpcClient = new RPCClient ();
+		eventManager = new EventManager();
+		session = new Session();
+		rpcClient = new RPCClient();
 		messageStream = new MessageStream();
-		archivist = new Archivist ();
+		archivist = new Archivist();
 
 		_consoleWriter = new ConsoleWriter ();
 		_logger = logger("mage");
