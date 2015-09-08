@@ -90,6 +90,11 @@ public class Module<T> : Singleton<T> where T : class, new() {
 	
 	public void setupUsercommands (Action<Exception> cb) {
 		logger.info ("Setting up usercommands");
+
+		if (commands == null) {
+			cb(null);
+			return;
+		}
 		
 		commandHandlerActions = new Dictionary<string, Action<JObject, Action<Exception, JToken>>> ();
 		commandHandlerFuncs = new Dictionary<string, Func<JObject, UsercommandStatus>> ();
