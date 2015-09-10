@@ -126,13 +126,13 @@ public class TomeObject : JObject {
 		JToken property = this[propertyName];
 		switch (property.Type) {
 		case JTokenType.Array:
-			(property as TomeArray).Assign(Tome.Conjure(value, root));
+			(property as TomeArray).Assign(value);
 			break;
 		case JTokenType.Object:
-			(property as TomeObject).Assign(Tome.Conjure(value, root));
+			(property as TomeObject).Assign(value);
 			break;
 		default:
-			(property as TomeValue).Assign(Tome.Conjure(value, root));
+			(property as TomeValue).Assign(value);
 			break;
 		}
 	}

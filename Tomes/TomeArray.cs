@@ -129,13 +129,13 @@ public class TomeArray : JArray {
 		JToken property = this[index];
 		switch (property.Type) {
 		case JTokenType.Array:
-			(property as TomeArray).Assign(Tome.Conjure(value, root));
+			(property as TomeArray).Assign(value);
 			break;
 		case JTokenType.Object:
-			(property as TomeObject).Assign(Tome.Conjure(value, root));
+			(property as TomeObject).Assign(value);
 			break;
 		default:
-			(property as TomeValue).Assign(Tome.Conjure(value, root));
+			(property as TomeValue).Assign(value);
 			break;
 		}
 	}
@@ -248,11 +248,24 @@ public class TomeArray : JArray {
 		// Insert given items starting at given index
 		for (int addI = 0; addI < insertItems.Count; addI += 1) {
 			int insertI = index + addI;
-			this.Insert(insertI, insertItems[addI]);
+			this.Insert(insertI, Tome.Conjure(insertItems[addI]));
 			if (onAdd != null) {
 				onAdd.Invoke(insertI);
 			}
 		}
+	}
+
+
+	// We implement this as when using JArray.IndexOf(JToken) it compares the reference but not the value.
+	public int IndexOf(string lookFor) {
+		for (int i = 0; i < this.Count; i += 1) {
+			JToken value = this[i];
+			if (value.Type == JTokenType.String && (string)value == lookFor) {
+				return i;
+			}
+		}
+
+		return -1;
 	}
 
 
@@ -326,7 +339,7 @@ public class TomeArray : JArray {
 			items.First.Remove();
 			items.First.Remove();
 
-			Splice(index, index, items);
+			Splice(index, deleteCount, items);
 			break;
 
 		default:
