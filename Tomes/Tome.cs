@@ -21,8 +21,7 @@ public class Tome {
 	}
 
 	//
-	public static JToken PathValue(JToken data, JArray paths) {
-		JToken value = data;
+	public static JToken PathValue(JToken value, JArray paths) {
 		foreach (JToken path in paths) {
 			value = PathValue(value, path);
 		}
@@ -31,8 +30,7 @@ public class Tome {
 	}
 	
 	//
-	public static JToken PathValue(JToken data, List<string> paths) {
-		JToken value = data;
+	public static JToken PathValue(JToken value, List<string> paths) {
 		foreach (string path in paths) {
 			value = PathValue(value, path);
 		}
@@ -41,21 +39,21 @@ public class Tome {
 	}
 
 	//
-	public static JToken PathValue(JToken data, JToken key) {
-		if (data.Type == JTokenType.Array) {
-			return data[(int)key];
+	public static JToken PathValue(JToken value, JToken key) {
+		if (value.Type == JTokenType.Array) {
+			return value[(int)key];
 		}
 		
-		return data[(string)key];
+		return value[(string)key];
 	}
 	
 	//
-	public static JToken PathValue(JToken data, string key) {
-		if (data.Type == JTokenType.Array) {
-			return data[int.Parse(key)];
+	public static JToken PathValue(JToken value, string key) {
+		if (value.Type == JTokenType.Array) {
+			return value[int.Parse(key)];
 		}
 		
-		return data[key];
+		return value[key];
 	}
 
 	//
