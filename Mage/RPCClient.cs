@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using Newtonsoft.Json.Linq;
 
 public class RPCClient : JSONRPC {
-	private Mage mage { get { return Mage.instance; } }
+	private Mage mage { get { return Mage.Instance; } }
 	private Logger logger { get { return mage.logger("rpcClient"); } }
 
 	public void setEndpoint(string baseUrl, string appName, string username = null, string password = null) {
@@ -16,7 +16,7 @@ public class RPCClient : JSONRPC {
 		Dictionary<string, string> headers = new Dictionary<string, string> ();
 		string sessionKey = mage.session.GetSessionKey ();
 
-		if (sessionKey != null) {
+		if (!string.IsNullOrEmpty(sessionKey)) {
 			headers.Add("X-MAGE-SESSION", sessionKey);
 		}
 

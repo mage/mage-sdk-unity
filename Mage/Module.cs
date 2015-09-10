@@ -13,7 +13,7 @@ public class UsercommandStatus {
 
 public class Module<T> : Singleton<T> where T : class, new() {
 	//
-	protected Mage mage { get { return Mage.instance; } }
+	protected Mage mage { get { return Mage.Instance; } }
 	protected Logger logger { get { return mage.logger(this.GetType().Name); } }
 
 

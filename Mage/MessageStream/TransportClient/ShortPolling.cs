@@ -4,7 +4,7 @@ using System.Collections.Generic;
 using System.Threading;
 
 public class ShortPolling : TransportClient {
-	private Mage mage { get { return Mage.instance; } }
+	private Mage mage { get { return Mage.Instance; } }
 	private Logger logger { get { return mage.logger("shortpolling"); } }
 	
 	// Whether or not the poller is working

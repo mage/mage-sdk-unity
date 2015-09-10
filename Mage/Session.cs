@@ -1,7 +1,7 @@
 ﻿using Newtonsoft.Json.Linq;
 
 public class Session {
-	private Mage mage { get { return Mage.instance; }}
+	private Mage mage { get { return Mage.Instance; }}
 
 	//
 	private string sessionKey;

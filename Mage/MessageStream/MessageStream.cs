@@ -5,7 +5,7 @@ using System.Text;
 using Newtonsoft.Json.Linq;
 
 public class MessageStream {
-	private Mage mage { get { return Mage.instance; } }
+	private Mage mage { get { return Mage.Instance; } }
 	private Logger logger { get { return mage.logger("messagestream"); } }
 
 	// Endpoint and credentials

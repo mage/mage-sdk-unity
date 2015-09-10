@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using Newtonsoft.Json.Linq;
 
 public class Archivist : EventEmitter<JObject> {
-	private Mage mage { get { return Mage.instance; } }
+	private Mage mage { get { return Mage.Instance; } }
 	private Logger logger { get { return mage.logger("archivist"); } }
 
 	// Local cache of all retrieved vault values
