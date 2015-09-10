@@ -122,6 +122,7 @@ public class TomeArray : JArray {
 			if (onAdd != null) {
 				onAdd.Invoke(index);
 			}
+			return;
 		}
 
 		// Assign the property
@@ -154,7 +155,7 @@ public class TomeArray : JArray {
 			break;
 		}
 
-		this.Replace(JValue.CreateNull());
+		this[index].Replace(JValue.CreateNull());
 		if (onDel != null) {
 			onDel.Invoke(index);
 		}
@@ -321,7 +322,7 @@ public class TomeArray : JArray {
 			int index = (int)val[0];
 			int deleteCount = (int)val[1];
 
-			JArray items = new JArray(val);
+			JArray items = new JArray(val as JArray);
 			items.First.Remove();
 			items.First.Remove();
 

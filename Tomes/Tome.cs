@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using Newtonsoft.Json.Linq;
 
 public class Tome {
@@ -23,15 +24,38 @@ public class Tome {
 	public static JToken PathValue(JToken data, JArray paths) {
 		JToken value = data;
 		foreach (JToken path in paths) {
-			if (value.Type == JTokenType.Array) {
-				value = value[(int)path];
-				continue;
-			}
-
-			value = value[(string)path];
+			value = PathValue(value, path);
 		}
 
 		return value;
+	}
+	
+	//
+	public static JToken PathValue(JToken data, List<string> paths) {
+		JToken value = data;
+		foreach (string path in paths) {
+			value = PathValue(value, path);
+		}
+		
+		return value;
+	}
+
+	//
+	public static JToken PathValue(JToken data, JToken key) {
+		if (data.Type == JTokenType.Array) {
+			return data[(int)key];
+		}
+		
+		return data[(string)key];
+	}
+	
+	//
+	public static JToken PathValue(JToken data, string key) {
+		if (data.Type == JTokenType.Array) {
+			return data[int.Parse(key)];
+		}
+		
+		return data[key];
 	}
 
 	//
