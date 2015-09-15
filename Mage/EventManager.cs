@@ -1,7 +1,7 @@
 ﻿using Newtonsoft.Json.Linq;
 
 public class EventManager : EventEmitter<JToken> {
-	private Mage mage { get { return Mage.instance; } }
+	private Mage mage { get { return Mage.Instance; } }
 	private Logger logger { get { return mage.logger("eventManager"); } }
 
 	public void emitEventList(JArray events) {

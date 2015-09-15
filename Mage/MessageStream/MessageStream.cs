@@ -5,7 +5,7 @@ using System.Text;
 using Newtonsoft.Json.Linq;
 
 public class MessageStream {
-	private Mage mage { get { return Mage.instance; } }
+	private Mage mage { get { return Mage.Instance; } }
 	private Logger logger { get { return mage.logger("messagestream"); } }
 
 	// Endpoint and credentials
@@ -54,6 +54,7 @@ public class MessageStream {
 		});
 
 		// Also stop the message client when the editor is stopped
+		#if UNITY_EDITOR
 		UnityEditorPlayMode.onEditorModeChanged += (EditorPlayModeState newState) => {
 			if (newState == EditorPlayModeState.Stopped) {
 				transportClient.stop();
@@ -61,6 +62,7 @@ public class MessageStream {
 				_sessionKey = null;
 			}
 		};
+		#endif
 
 		// Set the selected transport client (or the default)
 		this.setTransport (transport);

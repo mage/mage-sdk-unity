@@ -5,7 +5,7 @@ using System.Collections.Generic;
 using Newtonsoft.Json.Linq;
 
 public class Archivist : EventEmitter<JObject> {
-	private Mage mage { get { return Mage.instance; } }
+	private Mage mage { get { return Mage.Instance; } }
 	private Logger logger { get { return mage.logger("archivist"); } }
 
 	// Local cache of all retrieved vault values
@@ -27,7 +27,7 @@ public class Archivist : EventEmitter<JObject> {
 			}
 
 			logger.data(diff["diff"]).verbose("Applying diff to vault value: " + cacheKeyName);
-			_cache[cacheKeyName].applyDiff((JArray)diff["diff"]);
+			_cache[cacheKeyName].ApplyDiff((JArray)diff["diff"]);
 		});
 	}
 
@@ -133,12 +133,18 @@ public class Archivist : EventEmitter<JObject> {
 			//if (result == null && !options ["optional"]) {
 			//	return cb (new Exception ("ValueNotFound"), null);
 			//}
-			
-			// Create vault value
-			VaultValue newValue = new VaultValue((JObject)result);
-			
-			// Add value to cache
-			_cache.Add (cacheKeyName, newValue);
+
+			VaultValue newValue;
+			try {
+				// Create vault value
+				newValue = new VaultValue((JObject)result);
+				
+				// Add value to cache
+				_cache.Add (cacheKeyName, newValue);
+			} catch (Exception cacheError) {
+				cb(cacheError, null);
+				return;
+			}
 
 			// Return result
 			cb (null, newValue.data);
@@ -181,22 +187,27 @@ public class Archivist : EventEmitter<JObject> {
 				return;
 			}
 
-			JArray topicValues = (JArray)result;
-			foreach (JObject topicValue in topicValues) {
-				// Determine value cacheKeyName
-				string valueTopic = topicValue["key"]["topic"].ToString();
-				JObject valueIndex = (JObject)topicValue["key"]["index"];
-				string cacheKeyName = getCacheKey(valueTopic, valueIndex);
+			try {
+				JArray topicValues = (JArray)result;
+				foreach (JObject topicValue in topicValues) {
+					// Determine value cacheKeyName
+					string valueTopic = topicValue["key"]["topic"].ToString();
+					JObject valueIndex = (JObject)topicValue["key"]["index"];
+					string cacheKeyName = getCacheKey(valueTopic, valueIndex);
 
-				// Create vault value
-				VaultValue newValue = new VaultValue(topicValue);
+					// Create vault value
+					VaultValue newValue = new VaultValue(topicValue);
 
-				// Add value to cache
-				_cache.Add (cacheKeyName, newValue);
+					// Add value to cache
+					_cache.Add (cacheKeyName, newValue);
 
-				// Add value to response
-				int responseKey = realQueryKeys[cacheKeyName];
-				responseArray[responseKey].Replace((JToken)newValue.data);
+					// Add value to response
+					int responseKey = realQueryKeys[cacheKeyName];
+					responseArray[responseKey].Replace((JToken)newValue.data);
+				}
+			} catch (Exception cacheError) {
+				cb(cacheError, null);
+				return;
 			}
 			
 			// Return result
@@ -239,22 +250,27 @@ public class Archivist : EventEmitter<JObject> {
 				return;
 			}
 
-			JArray topicValues = (JArray)result;
-			foreach (JObject topicValue in topicValues) {
-				// Determine value cacheKeyName
-				string valueTopic = topicValue["key"]["topic"].ToString();
-				JObject valueIndex = (JObject)topicValue["key"]["index"];
-				string cacheKeyName = getCacheKey(valueTopic, valueIndex);
+			try {
+				JArray topicValues = (JArray)result;
+				foreach (JObject topicValue in topicValues) {
+					// Determine value cacheKeyName
+					string valueTopic = topicValue["key"]["topic"].ToString();
+					JObject valueIndex = (JObject)topicValue["key"]["index"];
+					string cacheKeyName = getCacheKey(valueTopic, valueIndex);
 
-				// Create vault value
-				VaultValue newValue = new VaultValue(topicValue);
+					// Create vault value
+					VaultValue newValue = new VaultValue(topicValue);
 
-				// Add value to cache
-				_cache.Add (cacheKeyName, newValue);
+					// Add value to cache
+					_cache.Add (cacheKeyName, newValue);
 
-				// Add value to response
-				string responseKey = realQueryKeys[cacheKeyName];
-				responseObject.Add(responseKey, (JToken)newValue.data);
+					// Add value to response
+					string responseKey = realQueryKeys[cacheKeyName];
+					responseObject.Add(responseKey, (JToken)newValue.data);
+				}
+			} catch (Exception cacheError) {
+				cb(cacheError, null);
+				return;
 			}
 			
 			// Return result

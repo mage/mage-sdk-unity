@@ -4,19 +4,8 @@ using System.Collections.Generic;
 using Newtonsoft.Json.Linq;
 
 public class RPCClient : JSONRPC {
-	private Mage mage { get { return Mage.instance; } }
+	private Mage mage { get { return Mage.Instance; } }
 	private Logger logger { get { return mage.logger("rpcClient"); } }
-	private string _sessionKey;
-
-	public RPCClient () {
-		mage.eventManager.on ("session.set", (object sender, JToken session) => {
-			_sessionKey = session["key"].ToString();
-		});
-
-		mage.eventManager.on ("session.unset", (object sender, JToken reason) => {
-			_sessionKey = null;
-		});
-	}
 
 	public void setEndpoint(string baseUrl, string appName, string username = null, string password = null) {
 		base.setEndpoint (baseUrl + "/" + appName + "/jsonrpc", username, password);
@@ -25,12 +14,14 @@ public class RPCClient : JSONRPC {
 	public void call(string methodName, JObject parameters, Action<Exception, JToken> cb) {
 		// Attach anyre required mage headers
 		Dictionary<string, string> headers = new Dictionary<string, string> ();
-		if (_sessionKey != null) {
-			headers.Add("X-MAGE-SESSION", _sessionKey);
+		string sessionKey = mage.session.GetSessionKey ();
+
+		if (!string.IsNullOrEmpty(sessionKey)) {
+			headers.Add("X-MAGE-SESSION", sessionKey);
 		}
 
 		//
-		logger.verbose("[" + methodName + "] send to remote");
+		logger.data(parameters).verbose("[" + methodName + "] send to remote");
 
 		// Make the RPC call
 		this.call (1, methodName, parameters, headers, (Exception error, JObject responseObject) => {

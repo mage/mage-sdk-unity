@@ -13,7 +13,7 @@ public class UsercommandStatus {
 
 public class Module<T> : Singleton<T> where T : class, new() {
 	//
-	protected Mage mage { get { return Mage.instance; } }
+	protected Mage mage { get { return Mage.Instance; } }
 	protected Logger logger { get { return mage.logger(this.GetType().Name); } }
 
 
@@ -91,13 +91,18 @@ public class Module<T> : Singleton<T> where T : class, new() {
 	public void setupUsercommands (Action<Exception> cb) {
 		logger.info ("Setting up usercommands");
 		
-		commandHandlerActions = new Dictionary<string, Action<JObject, Action<Exception, JToken>>> ();
-		commandHandlerFuncs = new Dictionary<string, Func<JObject, UsercommandStatus>> ();
+		commandHandlerActions = new Dictionary<string, Action<JObject, Action<Exception, JToken>>>();
+		commandHandlerFuncs = new Dictionary<string, Func<JObject, UsercommandStatus>>();
+
+		if (commands == null) {
+			cb(null);
+			return;
+		}
 
 		foreach (string command in commands) {
 			registerCommand(command);
 		}
 		
-		cb (null);
+		cb(null);
 	}
 }

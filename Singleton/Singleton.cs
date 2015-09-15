@@ -2,19 +2,19 @@
 
 public class Singleton<T> where T : class, new() {
 	// Instance functions
-	private static T _instance;
-	public static T instance {
+	private static T _Instance;
+	public static T Instance {
 		get {
-			if (_instance == null) {
-				_instance = new T();
+			if (_Instance == null) {
+				_Instance = new T();
 			}
 			
-			return _instance;
+			return _Instance;
 		}
 	}
 
 	// Hack which makes sure the _instance property is set during the T class constructor
 	public Singleton () {
-		_instance = (T)(object)this;
+		_Instance = (T)(object)this;
 	}
 }
