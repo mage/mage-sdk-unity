@@ -54,6 +54,7 @@ public class MessageStream {
 		});
 
 		// Also stop the message client when the editor is stopped
+		#if UNITY_EDITOR
 		UnityEditorPlayMode.onEditorModeChanged += (EditorPlayModeState newState) => {
 			if (newState == EditorPlayModeState.Stopped) {
 				transportClient.stop();
@@ -61,6 +62,7 @@ public class MessageStream {
 				_sessionKey = null;
 			}
 		};
+		#endif
 
 		// Set the selected transport client (or the default)
 		this.setTransport (transport);

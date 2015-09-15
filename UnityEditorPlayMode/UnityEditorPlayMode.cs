@@ -1,4 +1,6 @@
-﻿using UnityEditor;
+﻿#if UNITY_EDITOR
+
+using UnityEditor;
 
 
 public enum EditorPlayModeState
@@ -58,3 +60,5 @@ public class UnityEditorPlayMode {
 		currentState = newState;
 	}
 }
+
+#endif
