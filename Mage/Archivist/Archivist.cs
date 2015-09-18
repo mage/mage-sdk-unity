@@ -107,21 +107,27 @@ public class Archivist : EventEmitter<JObject> {
 	//           Exposed Operations           //
 	////////////////////////////////////////////
 	public void get(string topic, JObject index, JObject options, Action<Exception, JToken> cb) {
-		// Check cache
-		string cacheKeyName = getCacheKey (topic, index);
-		if (_cache.ContainsKey(cacheKeyName)) {
-			cb(null, _cache[cacheKeyName].data);
-			return;
-		}
-		
 		// Default options
 		if (options == null) {
 			options = new JObject();
 		}
-
+		
 		if (options["optional"] == null) {
 			options.Add ("optional", new JValue(false));
 		}
+		
+		if (options["readCache"] == null) {
+			options.Add ("readCache", new JValue(true));
+		}
+
+
+		// Check cache
+		string cacheKeyName = getCacheKey (topic, index);
+		if (((bool)options["readCache"]) && _cache.ContainsKey(cacheKeyName)) {
+			cb(null, _cache[cacheKeyName].data);
+			return;
+		}
+
 	
 		// Get data from server
 		rawGet (topic, index, (Exception error, JToken result) => {
@@ -130,15 +136,16 @@ public class Archivist : EventEmitter<JObject> {
 				return;
 			}
 
-			//if (result == null && !options ["optional"]) {
-			//	return cb (new Exception ("ValueNotFound"), null);
-			//}
+			// Check if value present or optional
+			if (result == null && !((bool)options["optional"])) {
+				return cb(new Exception("ValueNotFound"), null);
+			}
 
 			VaultValue newValue;
 			try {
 				// Create vault value
 				newValue = new VaultValue((JObject)result);
-				
+
 				// Add value to cache
 				_cache.Add (cacheKeyName, newValue);
 			} catch (Exception cacheError) {
@@ -157,10 +164,24 @@ public class Archivist : EventEmitter<JObject> {
 		JArray responseArray = new JArray();
 
 
+		// Default options
+		if (options == null) {
+			options = new JObject();
+		}
+		
+		if (options["optional"] == null) {
+			options.Add ("optional", new JValue(false));
+		}
+		
+		if (options["readCache"] == null) {
+			options.Add ("readCache", new JValue(true));
+		}
+
+
 		// Check cache
 		foreach (JObject query in queries) {
 			string cacheKeyName = getCacheKey (query["topic"].ToString(), query["index"] as JObject);
-			if (_cache.ContainsKey(cacheKeyName)) {
+			if (((bool)options["readCache"]) && _cache.ContainsKey(cacheKeyName)) {
 				responseArray.Add(_cache[cacheKeyName].data);
 			} else {
 				realQueryKeys.Add(cacheKeyName, responseArray.Count);
@@ -175,9 +196,6 @@ public class Archivist : EventEmitter<JObject> {
 			cb (null, responseArray);
 			return;
 		}
-
-
-		// Default options
 
 
 		// Get data from server
@@ -209,6 +227,11 @@ public class Archivist : EventEmitter<JObject> {
 				cb(cacheError, null);
 				return;
 			}
+
+			// Check if any values are missing, or optional is set
+			if (responseArray.Count != realQueries.Count && !((bool)options["optional"])) {
+				return cb (new Exception("ValueNotFound"), null);
+			}
 			
 			// Return result
 			cb (null, responseArray);
@@ -221,10 +244,24 @@ public class Archivist : EventEmitter<JObject> {
 		JObject responseObject = new JObject();
 
 
+		// Default options
+		if (options == null) {
+			options = new JObject();
+		}
+		
+		if (options["optional"] == null) {
+			options.Add ("optional", new JValue(false));
+		}
+		
+		if (options["readCache"] == null) {
+			options.Add ("readCache", new JValue(true));
+		}
+
+
 		// Check cache
 		foreach (var query in queries) {
 			string cacheKeyName = getCacheKey (query.Value["topic"].ToString(), query.Value["index"] as JObject);
-			if (_cache.ContainsKey(cacheKeyName)) {
+			if (((bool)options["readCache"]) && _cache.ContainsKey(cacheKeyName)) {
 				responseObject.Add(query.Key, _cache[cacheKeyName].data);
 			} else {
 				realQueryKeys.Add(cacheKeyName, query.Key);
@@ -238,9 +275,6 @@ public class Archivist : EventEmitter<JObject> {
 			cb (null, responseObject);
 			return;
 		}
-
-		
-		// Default options
 
 
 		// Get data from server
@@ -271,6 +305,11 @@ public class Archivist : EventEmitter<JObject> {
 			} catch (Exception cacheError) {
 				cb(cacheError, null);
 				return;
+			}
+
+			// Check if any values are missing, or optional is set
+			if (responseObject.Count != realQueries.Count && !((bool)options["optional"])) {
+				return cb (new Exception("ValueNotFound"), null);
 			}
 			
 			// Return result
