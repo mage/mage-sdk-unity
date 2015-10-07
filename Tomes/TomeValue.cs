@@ -25,7 +25,7 @@ public class TomeValue : JValue {
 	//
 	private void EmitToParents(JToken oldValue) {
 		if (this != root) {
-			Tome.EmitParentChange(Parent.Parent);
+			Tome.EmitParentChange(Parent);
 		}
 	}
 

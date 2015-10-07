@@ -35,7 +35,7 @@ public class TomeObject : JObject {
 	//
 	private void EmitToParents(JToken oldValue) {
 		if (this != root) {
-			Tome.EmitParentChange(Parent.Parent);
+			Tome.EmitParentChange(Parent);
 		}
 	}
 	
