@@ -197,13 +197,8 @@ public class Archivist : EventEmitter<JObject> {
 
 					JToken responseResult = null;
 					if (topicValue["value"] != null) {
-						// Create vault value
 						VaultValue newValue = new VaultValue(topicValue);
-						
-						// Add value to cache
 						_cache.Add (cacheKeyName, newValue);
-
-						//
 						responseResult = (JToken)newValue.data;
 					}
 
@@ -266,13 +261,8 @@ public class Archivist : EventEmitter<JObject> {
 
 					JToken responseResult = null;
 					if (topicValue["value"] != null) {
-						// Create vault value
 						VaultValue newValue = new VaultValue(topicValue);
-						
-						// Add value to cache
 						_cache.Add (cacheKeyName, newValue);
-						
-						//
 						responseResult = (JToken)newValue.data;
 					}
 
