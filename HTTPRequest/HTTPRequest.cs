@@ -9,7 +9,7 @@ public class HTTPRequest {
 		// Initialize request instance
 		HttpWebRequest httpRequest = (HttpWebRequest)WebRequest.Create(url);
 		httpRequest.Method = WebRequestMethods.Http.Get;
-		
+
 		// Set request headers
 		if (headers != null) {
 			foreach (KeyValuePair<string, string> entry in headers) {
@@ -71,13 +71,20 @@ public class HTTPRequest {
 
 	private static void ReadResponseData (HttpWebRequest httpRequest, Action<Exception, string> cb) {
 		httpRequest.BeginGetResponse(new AsyncCallback((IAsyncResult callbackResult) => {
-			string responseString;
+			string responseString = null;
+			if (!httpRequest.HaveResponse) {
+				cb(null, responseString);
+				return;
+			}
+
 			try {
 				HttpWebResponse response = (HttpWebResponse)httpRequest.EndGetResponse(callbackResult);
-				
+
 				using (StreamReader httpWebStreamReader = new StreamReader(response.GetResponseStream())) {
 					responseString = httpWebStreamReader.ReadToEnd();
 				}
+
+				response.Close();
 			} catch (Exception error) {
 				cb(error, null);
 				return;
