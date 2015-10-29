@@ -71,8 +71,11 @@ public class Tome {
 				parentObject.onChanged.Invoke(null);
 			}
 			break;
+		case JTokenType.Property:
+			EmitParentChange(parent.Parent);
+			break;
 		default:
-			throw new Exception("TomeValue cannot be a parent!");
+			throw new Exception(parent.Type.ToString() + " cannot be a parent!");
 			break;
 		}
 	}

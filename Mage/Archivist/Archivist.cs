@@ -195,15 +195,16 @@ public class Archivist : EventEmitter<JObject> {
 					JObject valueIndex = (JObject)topicValue["key"]["index"];
 					string cacheKeyName = getCacheKey(valueTopic, valueIndex);
 
-					// Create vault value
-					VaultValue newValue = new VaultValue(topicValue);
-
-					// Add value to cache
-					_cache.Add (cacheKeyName, newValue);
+					JToken responseResult = null;
+					if (topicValue["value"] != null) {
+						VaultValue newValue = new VaultValue(topicValue);
+						_cache.Add (cacheKeyName, newValue);
+						responseResult = (JToken)newValue.data;
+					}
 
 					// Add value to response
 					int responseKey = realQueryKeys[cacheKeyName];
-					responseArray[responseKey].Replace((JToken)newValue.data);
+					responseArray[responseKey].Replace(responseResult);
 				}
 			} catch (Exception cacheError) {
 				cb(cacheError, null);
@@ -258,15 +259,16 @@ public class Archivist : EventEmitter<JObject> {
 					JObject valueIndex = (JObject)topicValue["key"]["index"];
 					string cacheKeyName = getCacheKey(valueTopic, valueIndex);
 
-					// Create vault value
-					VaultValue newValue = new VaultValue(topicValue);
-
-					// Add value to cache
-					_cache.Add (cacheKeyName, newValue);
+					JToken responseResult = null;
+					if (topicValue["value"] != null) {
+						VaultValue newValue = new VaultValue(topicValue);
+						_cache.Add (cacheKeyName, newValue);
+						responseResult = (JToken)newValue.data;
+					}
 
 					// Add value to response
 					string responseKey = realQueryKeys[cacheKeyName];
-					responseObject.Add(responseKey, (JToken)newValue.data);
+					responseObject.Add(responseKey, responseResult);
 				}
 			} catch (Exception cacheError) {
 				cb(cacheError, null);

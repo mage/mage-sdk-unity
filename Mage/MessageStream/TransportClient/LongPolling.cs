@@ -89,10 +89,14 @@ public class LongPolling : TransportClient {
 
 			// Call the message processer hook and re-call request loop function
 			try {
-				_processMessages(responseString);
+				logger.debug ("Recieved response: " + responseString);
+				if (responseString != null) {
+					_processMessages(responseString);
+				}
+
 				requestLoop();
 			} catch (Exception error) {
-				logger.data(responseString).error (error.ToString());
+				logger.error (error.ToString());
 				queueNextRequest(_errorInterval);
 			}
 		});

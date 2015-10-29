@@ -34,7 +34,7 @@ public class TomeArray : JArray {
 	//
 	private void EmitToParents(JToken oldValue) {
 		if (this != root) {
-			Tome.EmitParentChange(Parent.Parent);
+			Tome.EmitParentChange(Parent);
 		}
 	}
 
@@ -53,51 +53,78 @@ public class TomeArray : JArray {
 			TomeArray newTomeArray = new TomeArray((JArray)newValue, root);
 			this.Replace(newTomeArray);
 
-			onChanged -= EmitToParents;
-			onChanged += newTomeArray.onChanged;
-			newTomeArray.onChanged = onChanged;
-			newTomeArray.onDestroy = onDestroy;
-			onAdd -= EmitChanged;
-			onAdd += newTomeArray.onAdd;
-			newTomeArray.onAdd = onAdd;
-			onDel -= EmitChanged;
-			onDel += newTomeArray.onDel;
-			newTomeArray.onDel = onDel;
+			if (this.Parent == null) {
+				// If replace was successfuly move over event handlers and call new onChanged handler
+				// The instance in which replace would not be successful, is when the old and new values are the same
+				onChanged -= EmitToParents;
+				onChanged += newTomeArray.onChanged;
+				newTomeArray.onChanged = onChanged;
+				newTomeArray.onDestroy = onDestroy;
+				onAdd -= EmitChanged;
+				onAdd += newTomeArray.onAdd;
+				newTomeArray.onAdd = onAdd;
+				onDel -= EmitChanged;
+				onDel += newTomeArray.onDel;
+				newTomeArray.onDel = onDel;
 
-			if (newTomeArray.onChanged != null) {
-				newTomeArray.onChanged.Invoke(null);
+				if (newTomeArray.onChanged != null) {
+					newTomeArray.onChanged.Invoke(null);
+				}
+			} else {
+				// Otherwise call original onChanged handler
+				if (onChanged != null) {
+					onChanged.Invoke(null);
+				}
 			}
 			break;
 		case JTokenType.Object:
 			TomeObject newTomeObject = new TomeObject((JObject)newValue, root);
 			this.Replace(newTomeObject);
 
-			onChanged -= EmitToParents;
-			onChanged += newTomeObject.onChanged;
-			newTomeObject.onChanged = onChanged;
-			newTomeObject.onDestroy = onDestroy;
-			onAdd -= EmitChanged;
-			onAdd += newTomeObject.onAdd;
-			newTomeObject.onAdd = onAdd;
-			onDel -= EmitChanged;
-			onDel += newTomeObject.onDel;
-			newTomeObject.onDel = onDel;
+			if (this.Parent == null) {
+				// If replace was successfuly move over event handlers and call new onChanged handler
+				// The instance in which replace would not be successful, is when the old and new values are the same
+				onChanged -= EmitToParents;
+				onChanged += newTomeObject.onChanged;
+				newTomeObject.onChanged = onChanged;
+				newTomeObject.onDestroy = onDestroy;
+				onAdd -= EmitChanged;
+				onAdd += newTomeObject.onAdd;
+				newTomeObject.onAdd = onAdd;
+				onDel -= EmitChanged;
+				onDel += newTomeObject.onDel;
+				newTomeObject.onDel = onDel;
 
-			if (newTomeObject.onChanged != null) {
-				newTomeObject.onChanged.Invoke(null);
+				if (newTomeObject.onChanged != null) {
+					newTomeObject.onChanged.Invoke(null);
+				}
+			} else {
+				// Otherwise call original onChanged handler
+				if (onChanged != null) {
+					onChanged.Invoke(null);
+				}
 			}
 			break;
 		default:
 			TomeValue newTomeValue = new TomeValue((JValue)newValue, root);
 			this.Replace(newTomeValue);
 
-			onChanged -= EmitToParents;
-			onChanged += newTomeValue.onChanged;
-			newTomeValue.onChanged = onChanged;
-			newTomeValue.onDestroy = onDestroy;
+			if (this.Parent == null) {
+				// If replace was successfuly move over event handlers and call new onChanged handler
+				// The instance in which replace would not be successful, is when the old and new values are the same
+				onChanged -= EmitToParents;
+				onChanged += newTomeValue.onChanged;
+				newTomeValue.onChanged = onChanged;
+				newTomeValue.onDestroy = onDestroy;
 
-			if (newTomeValue.onChanged != null) {
-				newTomeValue.onChanged.Invoke(null);
+				if (newTomeValue.onChanged != null) {
+					newTomeValue.onChanged.Invoke(null);
+				}
+			} else {
+				// Otherwise call original onChanged handler
+				if (onChanged != null) {
+					onChanged.Invoke(null);
+				}
 			}
 			break;
 		}

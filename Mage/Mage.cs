@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Reflection;
 
 using Newtonsoft.Json.Linq;
+using System.Net;
 
 
 public class MageSetupStatus {
@@ -51,6 +52,7 @@ public class Mage : Singleton<Mage> {
 
 		_consoleWriter = new ConsoleWriter ();
 		_logger = logger("mage");
+		ServicePointManager.ServerCertificateValidationCallback += (o, cert, chain, errors) => true;
 	}
 
 	//
