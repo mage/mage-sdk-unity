@@ -2,6 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Reflection;
+using System.Net;
 
 using Newtonsoft.Json.Linq;
 
@@ -51,6 +52,9 @@ public class Mage : Singleton<Mage> {
 
 		_consoleWriter = new ConsoleWriter ();
 		_logger = logger("mage");
+
+		// TODO: properly check the damn certificate, for now ignore invalid ones (fix issue on Android/iOS)
+		ServicePointManager.ServerCertificateValidationCallback += (o, cert, chain, errors) => true;
 	}
 
 	//
