@@ -57,6 +57,9 @@ public class Mage : Singleton<Mage> {
 
 		// create a shared cookie container
 		cookies = new CookieContainer();
+
+		// TODO: properly check the damn certificate, for now ignore invalid ones (fix issue on Android/iOS)
+		ServicePointManager.ServerCertificateValidationCallback += (o, cert, chain, errors) => true;
 	}
 
 	//

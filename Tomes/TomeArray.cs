@@ -229,15 +229,19 @@ public class TomeArray : JArray {
 	}
 
 	//
-	public void Pop() {
+	public JToken Pop() {
+		JToken last = this[this.Count - 1];
 		this.Del(this.Count - 1);
 		this.Last.Remove();
+		return last;
 	}
 
 	//
-	public void Shift() {
+	public JToken Shift() {
+		JToken first = this[0];
 		this.Del(0);
 		this.First.Remove();
+		return first;
 	}
 
 	//
