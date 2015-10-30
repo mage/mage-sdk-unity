@@ -225,7 +225,7 @@ public class TomeArray : JArray {
 
 	//
 	public void Push(JToken item) {
-		this.Set(this.Count, Tome.Conjure(item, root));
+		this.Set(this.Count, item);
 	}
 
 	//
