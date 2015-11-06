@@ -2,6 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Reflection;
+using System.Net;
 
 using Newtonsoft.Json.Linq;
 
@@ -23,6 +24,8 @@ public class Mage : Singleton<Mage> {
 	private ConsoleWriter _consoleWriter;
 	private Logger _logger;
 
+	//
+	public CookieContainer cookies;
 
 	//
 	private Dictionary<string, Logger> _loggers = new Dictionary<string, Logger>();
@@ -49,8 +52,14 @@ public class Mage : Singleton<Mage> {
 		messageStream = new MessageStream();
 		archivist = new Archivist();
 
-		_consoleWriter = new ConsoleWriter ();
+		_consoleWriter = new ConsoleWriter();
 		_logger = logger("mage");
+
+		// create a shared cookie container
+		cookies = new CookieContainer();
+
+		// TODO: properly check the damn certificate, for now ignore invalid ones (fix issue on Android/iOS)
+		ServicePointManager.ServerCertificateValidationCallback += (o, cert, chain, errors) => true;
 	}
 
 	//

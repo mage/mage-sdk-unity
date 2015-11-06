@@ -5,11 +5,17 @@ using System.IO;
 using System.Text;
 
 public class HTTPRequest {
+	public static Mage mage { get { return Mage.Instance; } }
+
 	public static void Get(string url, Dictionary<string, string> headers, Action<Exception, string> cb) {
 		// Initialize request instance
 		HttpWebRequest httpRequest = (HttpWebRequest)WebRequest.Create(url);
 		httpRequest.Method = WebRequestMethods.Http.Get;
-		
+
+		if (mage.cookies != null) {
+			httpRequest.CookieContainer = mage.cookies;
+		}
+
 		// Set request headers
 		if (headers != null) {
 			foreach (KeyValuePair<string, string> entry in headers) {
@@ -34,6 +40,10 @@ public class HTTPRequest {
 		// Set content type if provided
 		if (contentType != null) {
 			httpRequest.ContentType = contentType;
+		}
+
+		if (mage.cookies != null) {
+			httpRequest.CookieContainer = mage.cookies;
 		}
 		
 		// Set request headers
@@ -71,13 +81,20 @@ public class HTTPRequest {
 
 	private static void ReadResponseData (HttpWebRequest httpRequest, Action<Exception, string> cb) {
 		httpRequest.BeginGetResponse(new AsyncCallback((IAsyncResult callbackResult) => {
-			string responseString;
+			string responseString = null;
+			if (!httpRequest.HaveResponse) {
+				cb(null, responseString);
+				return;
+			}
+
 			try {
 				HttpWebResponse response = (HttpWebResponse)httpRequest.EndGetResponse(callbackResult);
-				
+
 				using (StreamReader httpWebStreamReader = new StreamReader(response.GetResponseStream())) {
 					responseString = httpWebStreamReader.ReadToEnd();
 				}
+
+				response.Close();
 			} catch (Exception error) {
 				cb(error, null);
 				return;
