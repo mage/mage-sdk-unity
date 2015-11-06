@@ -16,29 +16,70 @@ public class VaultValue {
 	private string _mediaType;
 	public string mediaType { get { return _mediaType; } }
 
-	//private uint _expirationTime;
-	//public uint expirationTime { get { return _expirationTime; } }
+	private int? _expirationTime;
+	public int? expirationTime { get { return _expirationTime; } }
+
+	//
+	private DateTime _writtenAt;
+	public DateTime writtenAt { get { return _writtenAt; }}
 
 
 	//
-	public VaultValue(JObject valueObject) {
-		// Extract value data
-		_topic = valueObject["key"]["topic"].ToString();
-		_index = (JObject)valueObject["key"]["index"];
+	public VaultValue(string topic, JObject index) {
+		_topic = topic;
+		_index = index;
+	}
 
-		_mediaType = valueObject["value"]["mediaType"].ToString();
 
-		// TODO: implement multiple media-types
-		_data = Tome.Conjure(JToken.Parse(valueObject["value"]["data"].ToString()));
+	// TODO: implement multiple media-types and encoding
+	public void SetData(string mediaType, JToken data) {
+		// Detect media type
+		_mediaType = mediaType;
 
-		// TODO: handle expiration time
-		//_expirationTime = valueObject["value"]["expirationTime"];
+		// Set data based on media type
+		_data = Tome.Conjure(JToken.Parse((string)data));
+
+		// Bump the last written time
+		_writtenAt = DateTime.Now;
 	}
 
 
 	//
-	public void ApplyDiff(JArray operations) {
-		Tome.ApplyDiff(_data, operations);
+	public void Del() {
+		// Bump the last written time and check if we have data to destroy
+		_writtenAt = DateTime.Now;
+		if (_data == null) {
+			return;
+		}
+
+		// Cleanup data
+		Tome.Destroy(_data);
+		_data = null;
+		_mediaType = null;
+
+		// Clear expiration time
+		Touch(null);
+	}
+
+
+	// TODO: the actual implementation of this requires the MAGE time module,
+	// also we have a timer to clear the value once expired.
+	public void Touch(int? expirationTime) {
+		_expirationTime = expirationTime;
+	}
+
+
+	//
+	public void ApplyDiff(JArray diff) {
+		if (diff == null || _data == null) {
+			return;
+		}
+
+		// Apply diff to data
+		Tome.ApplyDiff(_data, diff);
+
+		// Bump the last written time
+		_writtenAt = DateTime.Now;
 	}
 }
  

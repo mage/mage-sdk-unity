@@ -21,6 +21,21 @@ public class Tome {
 	}
 
 	//
+	public static void Destroy(JToken data) {
+		switch (data.Type) {
+		case JTokenType.Array:
+			(data as TomeArray).Destroy();
+			break;
+		case JTokenType.Object:
+			(data as TomeObject).Destroy();
+			break;
+		default:
+			(data as TomeValue).Destroy();
+			break;
+		}
+	}
+
+	//
 	public static JToken PathValue(JToken value, JArray paths) {
 		foreach (JToken path in paths) {
 			value = PathValue(value, path);
@@ -83,12 +98,12 @@ public class Tome {
 	//
 	public static void ApplyDiff(JToken root, JArray operations) {
 		foreach (JObject operation in operations) {
-			JToken value = PathValue(root, (JArray)operation["chain"]);
-
-			string op = operation["op"].ToString();
-			JToken val = operation["val"];
-
 			try {
+				JToken value = PathValue(root, (JArray)operation["chain"]);
+				
+				string op = operation["op"].ToString();
+				JToken val = operation["val"];
+
 				switch (value.Type) {
 				case JTokenType.Array:
 					(value as TomeArray).ApplyOperation(op, val, root);
@@ -106,6 +121,8 @@ public class Tome {
 				UnityEngine.Debug.LogError("Failed to apply diff operation:");
 				UnityEngine.Debug.LogError(operation);
 				UnityEngine.Debug.LogError(diffError);
+				UnityEngine.Debug.LogError(root);
+				UnityEngine.Debug.LogError(PathValue(root, (JArray)operation["chain"]));
 				throw diffError;
 			}
 		}
