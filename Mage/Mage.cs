@@ -109,17 +109,47 @@ public class Mage : Singleton<Mage> {
 			// Use reflection to find module by name
 			Assembly assembly = Assembly.GetExecutingAssembly();
 			Type[] assemblyTypes = assembly.GetTypes();
-			foreach(Type moduleType in assemblyTypes) {
-				if (moduleName == moduleType.Name) {
-					// Grab module instance from singleton base
-					BindingFlags staticInstanceGetter = BindingFlags.GetProperty;
-					var singletonType = typeof(Singleton<>).MakeGenericType(moduleType);
-					Object instance = singletonType.InvokeMember("Instance", staticInstanceGetter, null, null, null);
+			foreach(Type t in assemblyTypes) {
+				if (moduleName == t.Name) {
+					BindingFlags staticProperty = BindingFlags.Static | BindingFlags.GetProperty;
+					BindingFlags publicMethod = BindingFlags.Public | BindingFlags.InvokeMethod;
 
-					// Invoke the setup method on the module
-					BindingFlags publicSetupFunction = BindingFlags.InvokeMethod;
-					object[] arguments = new object[]{callback};
-					moduleType.InvokeMember("Setup", publicSetupFunction, null, instance, arguments);
+					// Grab module instance from singleton base
+					var singletonType = typeof(Singleton<>).MakeGenericType(t);
+					Object instance = singletonType.InvokeMember("Instance", staticProperty, null, null, null);
+
+					// Setup module
+					var moduleType = typeof(Module<>).MakeGenericType(t);
+					Async.series (new List<Action<Action<Exception>>>() {
+						(Action<Exception> callbackInner) => {
+							// Setup module user commands
+							object[] arguments = new object[]{callbackInner};
+							moduleType.InvokeMember("setupUsercommands", publicMethod, null, instance, arguments);
+						},
+						(Action<Exception> callbackInner) => {
+							// Setup module static data
+							object[] arguments = new object[]{callbackInner};
+							moduleType.InvokeMember("setupStaticData", publicMethod, null, instance, arguments);
+						}
+					}, (Exception error) => {
+						if (error != null) {
+							callback(error);
+							return;
+						}
+
+						// Check if the module has a setup method
+						if (t.GetMethod("Setup") == null) {
+							logger(moduleName).info("No setup function");
+							callback(null);
+							return;
+						}
+
+						// Invoke the setup method on the module
+						logger(moduleName).info("Executing setup function");
+						object[] arguments = new object[]{callback};
+						t.InvokeMember("Setup", publicMethod, null, instance, arguments);
+					});
+
 					return;
 				}
 			}
