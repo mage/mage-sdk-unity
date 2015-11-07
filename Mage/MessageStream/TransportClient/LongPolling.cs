@@ -2,6 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Threading;
+using System.Net;
 
 public class LongPolling : TransportClient {
 	private Mage mage { get { return Mage.Instance; } }
@@ -14,6 +15,9 @@ public class LongPolling : TransportClient {
 	private Func<string> _getEndpoint;
 	private Func<Dictionary<string, string>> _getHeaders;
 	private Action<string> _processMessages;
+
+	//
+	HttpWebRequest _currentRequest;
 
 	// Required interval timer for polling delay
 	private int _errorInterval;
@@ -35,7 +39,7 @@ public class LongPolling : TransportClient {
 			return;
 		}
 
-		logger.debug ("Starting");
+		logger.debug("Starting");
 		_running = true;
 		requestLoop ();
 	}
@@ -43,14 +47,22 @@ public class LongPolling : TransportClient {
 
 	// Stops the poller
 	public override void stop() {
-		if (_intervalTimer != null) {
-			_intervalTimer.Dispose();
-			_intervalTimer = null;
-			logger.debug ("Stopped");
-		} else {
-			logger.debug ("Stopping...");
-		}
 		_running = false;
+		logger.debug("Stopping...");
+
+		if (_intervalTimer != null) {
+			_intervalTimer.Dispose ();
+			_intervalTimer = null;
+		} else {
+			logger.debug("Timer Stopped");
+		}
+
+		if (_currentRequest != null) {
+			_currentRequest.Abort ();
+			_currentRequest = null;
+		} else {
+			logger.debug("Connections Stopped");
+		}
 	}
 
 
@@ -73,23 +85,31 @@ public class LongPolling : TransportClient {
 
 		// Check if the poller should be running
 		if (_running == false) {
-			logger.debug ("Stopped");
+			logger.debug("Stopped");
 			return;
 		}
 
 		// Send poll request and wait for a response
 		string endpoint = _getEndpoint();
-		logger.debug ("Sending request: " + endpoint);
-		HTTPRequest.Get(endpoint, _getHeaders(), (Exception requestError, string responseString) => {
+		logger.debug("Sending request: " + endpoint);
+		_currentRequest = HTTPRequest.Get(endpoint, _getHeaders(), mage.cookies, (Exception requestError, string responseString) => {
+			_currentRequest = null;
+
+			// Ignore errors if we have been stopped
+			if (requestError != null && !_running) {
+				logger.debug("Stopped");
+				return;
+			}
+
 			if (requestError != null) {
-				logger.error (requestError.ToString());
+				logger.error(requestError.ToString());
 				queueNextRequest(_errorInterval);
 				return;
 			}
 
 			// Call the message processer hook and re-call request loop function
 			try {
-				logger.debug ("Recieved response: " + responseString);
+				logger.debug("Recieved response: " + responseString);
 				if (responseString != null) {
 					_processMessages(responseString);
 				}

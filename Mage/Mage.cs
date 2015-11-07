@@ -25,6 +25,10 @@ public class Mage : Singleton<Mage> {
 	private Logger _logger;
 
 	//
+	string baseUrl;
+	string appName;
+	string username;
+	string password;
 	public CookieContainer cookies;
 
 	//
@@ -44,19 +48,13 @@ public class Mage : Singleton<Mage> {
 	}
 
 
-	//
+	// Avoid putting setup logic in the contstuctor. Only things that can be
+	// carried between game sessions should go here. Otherwise we need to be
+	// able to re-initialize them inside the setup function.
 	public Mage() {
-		eventManager = new EventManager();
-		session = new Session();
-		rpcClient = new RPCClient();
-		messageStream = new MessageStream();
-		archivist = new Archivist();
-
+		// Setup log writters
 		_consoleWriter = new ConsoleWriter();
 		_logger = logger("mage");
-
-		// create a shared cookie container
-		cookies = new CookieContainer();
 
 		// TODO: properly check the damn certificate, for now ignore invalid ones (fix issue on Android/iOS)
 		ServicePointManager.ServerCertificateValidationCallback += (o, cert, chain, errors) => true;
@@ -64,26 +62,64 @@ public class Mage : Singleton<Mage> {
 
 	//
 	public void setEndpoints (string baseUrl, string appName, string username = null, string password = null) {
-		rpcClient.setEndpoint (baseUrl, appName, username, password);
-		messageStream.setEndpoint (baseUrl, username, password);
+		this.baseUrl = baseUrl;
+		this.appName = appName;
+		this.username = username;
+		this.password = password;
+
+		if (rpcClient != null) {
+			rpcClient.setEndpoint(baseUrl, appName, username, password);
+		}
+
+		if (messageStream != null) {
+			messageStream.setEndpoint(baseUrl, username, password);
+		}
 	}
 
 	//
 	public void setup (List<string> moduleNames, Action<Exception> cb) {
-		_logger.info ("Setting up modules");
+		// Cleanup any existing internal modules
+		if (messageStream != null) {
+			messageStream.Dispose();
+		}
 
+
+		// Create a shared cookie container
+		cookies = new CookieContainer();
+
+
+		// Initialize mage internal modules
+		eventManager = new EventManager();
+		session = new Session();
+		rpcClient = new RPCClient();
+		messageStream = new MessageStream();
+		archivist = new Archivist();
+
+
+		// Set endpoints
+		rpcClient.setEndpoint(baseUrl, appName, username, password);
+		messageStream.setEndpoint(baseUrl, username, password);
+
+
+		// Setup application modules
+		_logger.info ("Setting up modules");
 		Async.each<string> (moduleNames, (string moduleName, Action<Exception> callback) => {
 			_logger.info("Setting up module: " + moduleName);
 
 			// Use reflection to find module by name
 			Assembly assembly = Assembly.GetExecutingAssembly();
 			Type[] assemblyTypes = assembly.GetTypes();
-			foreach(Type t in assemblyTypes) {
-				if (moduleName == t.Name) {
+			foreach(Type moduleType in assemblyTypes) {
+				if (moduleName == moduleType.Name) {
+					// Grab module instance from singleton base
+					BindingFlags staticInstanceGetter = BindingFlags.GetProperty;
+					var singletonType = typeof(Singleton<>).MakeGenericType(moduleType);
+					Object instance = singletonType.InvokeMember("Instance", staticInstanceGetter, null, null, null);
+
 					// Invoke the setup method on the module
-					BindingFlags memberType = BindingFlags.InvokeMethod;
+					BindingFlags publicSetupFunction = BindingFlags.InvokeMethod;
 					object[] arguments = new object[]{callback};
-					t.InvokeMember("setupInstance", memberType, null, null, arguments);
+					moduleType.InvokeMember("Setup", publicSetupFunction, null, instance, arguments);
 					return;
 				}
 			}

@@ -19,19 +19,19 @@ public class JSONRPC {
 		_password = password;
 	}
 
-	public void call(string methodName, JObject parameters, Dictionary<string, string> headers, Action<Exception, JObject> cb) {
-		call(JValue.CreateNull(), methodName, parameters, headers, cb);
+	public void call(string methodName, JObject parameters, Dictionary<string, string> headers, CookieContainer cookies, Action<Exception, JObject> cb) {
+		call(JValue.CreateNull(), methodName, parameters, headers, cookies, cb);
 	}
 
-	public void call(string id, string methodName, JObject parameters, Dictionary<string, string> headers, Action<Exception, JObject> cb) {
-		call(new JValue(id), methodName, parameters, headers, cb);
+	public void call(string id, string methodName, JObject parameters, Dictionary<string, string> headers, CookieContainer cookies, Action<Exception, JObject> cb) {
+		call(new JValue(id), methodName, parameters, headers, cookies, cb);
 	}
 
-	public void call(int id, string methodName, JObject parameters, Dictionary<string, string> headers, Action<Exception, JObject> cb) {
-		call(new JValue(id), methodName, parameters, headers, cb);
+	public void call(int id, string methodName, JObject parameters, Dictionary<string, string> headers, CookieContainer cookies, Action<Exception, JObject> cb) {
+		call(new JValue(id), methodName, parameters, headers, cookies, cb);
 	}
 
-	public void call(JValue id, string methodName, JObject parameters, Dictionary<string, string> headers, Action<Exception, JObject> cb) {
+	public void call(JValue id, string methodName, JObject parameters, Dictionary<string, string> headers, CookieContainer cookies, Action<Exception, JObject> cb) {
 		// Make sure the endpoint is set
 		if (string.IsNullOrEmpty(_endpoint)) {
 			cb(new Exception("Endpoint has not been set"), null);
@@ -64,7 +64,7 @@ public class JSONRPC {
 		}
 
 		// Send HTTP post to JSON rpc endpoint
-		HTTPRequest.Post(_endpoint, "application/json", postData, _headers, (Exception requestError, string responseString) => {
+		HTTPRequest.Post(_endpoint, "application/json", postData, _headers, cookies, (Exception requestError, string responseString) => {
 			if (requestError != null) {
 				cb(requestError, null);
 				return;
