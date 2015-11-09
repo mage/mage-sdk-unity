@@ -159,6 +159,10 @@ public class TomeObject : JObject {
 			(property as TomeObject).Assign(value);
 			break;
 		default:
+			if ((property as TomeValue) == null) {
+				Mage.Instance.logger("Tomes").data(property).error("property is not a tome value: " + propertyName.ToString());
+				UnityEngine.Debug.Log(this);
+			}
 			(property as TomeValue).Assign(value);
 			break;
 		}
@@ -175,6 +179,10 @@ public class TomeObject : JObject {
 			(property as TomeObject).Destroy();
 			break;
 		default:
+			if ((property as TomeValue) == null) {
+				Mage.Instance.logger("Tomes").data(property).error("property is not a tome value: " + propertyName.ToString());
+				UnityEngine.Debug.Log(this);
+			}
 			(property as TomeValue).Destroy();
 			break;
 		}

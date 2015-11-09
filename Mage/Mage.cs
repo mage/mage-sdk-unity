@@ -17,7 +17,7 @@ public class Mage : Singleton<Mage> {
 	//
 	public EventManager eventManager;
 	public Session session;
-	public RPCClient rpcClient;
+	public CommandCenter commandCenter;
 	public MessageStream messageStream;
 	public Archivist archivist;
 
@@ -67,17 +67,17 @@ public class Mage : Singleton<Mage> {
 		this.username = username;
 		this.password = password;
 
-		if (rpcClient != null) {
-			rpcClient.setEndpoint(baseUrl, appName, username, password);
+		if (commandCenter != null) {
+			commandCenter.SetEndpoint(baseUrl, appName, username, password);
 		}
 
 		if (messageStream != null) {
-			messageStream.setEndpoint(baseUrl, username, password);
+			messageStream.SetEndpoint(baseUrl, username, password);
 		}
 	}
 
 	//
-	public void setup (List<string> moduleNames, Action<Exception> cb) {
+	public void Setup(Action<Exception> cb) {
 		// Cleanup any existing internal modules
 		if (messageStream != null) {
 			messageStream.Dispose();
@@ -91,16 +91,20 @@ public class Mage : Singleton<Mage> {
 		// Initialize mage internal modules
 		eventManager = new EventManager();
 		session = new Session();
-		rpcClient = new RPCClient();
+		commandCenter = new CommandCenter();
 		messageStream = new MessageStream();
 		archivist = new Archivist();
 
 
 		// Set endpoints
-		rpcClient.setEndpoint(baseUrl, appName, username, password);
-		messageStream.setEndpoint(baseUrl, username, password);
+		commandCenter.SetEndpoint(baseUrl, appName, username, password);
+		messageStream.SetEndpoint(baseUrl, username, password);
 
+		cb(null);
+	}
 
+	//
+	public void SetupModules(List<string> moduleNames, Action<Exception> cb) {
 		// Setup application modules
 		_logger.info ("Setting up modules");
 		Async.each<string> (moduleNames, (string moduleName, Action<Exception> callback) => {
@@ -167,11 +171,13 @@ public class Mage : Singleton<Mage> {
 			cb(null);
 		});
 	}
-	
-	public IEnumerator setupTask (List<string> moduleNames, Action<Exception> cb) {
+
+
+	//
+	public IEnumerator SetupTask(Action<Exception> cb) {
 		// Execute async setup function
 		MageSetupStatus setupStatus = new MageSetupStatus ();
-		setup(moduleNames, (Exception error) => {
+		Setup((Exception error) => {
 			setupStatus.error = error;
 			setupStatus.done = true;
 		});
@@ -181,6 +187,24 @@ public class Mage : Singleton<Mage> {
 			yield return null;
 		}
 
+		// Call callback with error if there is one
+		cb (setupStatus.error);
+	}
+
+	//
+	public IEnumerator SetupModulesTask(List<string> moduleNames, Action<Exception> cb) {
+		// Execute async setup function
+		MageSetupStatus setupStatus = new MageSetupStatus ();
+		SetupModules(moduleNames, (Exception error) => {
+			setupStatus.error = error;
+			setupStatus.done = true;
+		});
+		
+		// Wait for setup to return
+		while (!setupStatus.done) {
+			yield return null;
+		}
+		
 		// Call callback with error if there is one
 		cb (setupStatus.error);
 	}

@@ -119,6 +119,7 @@ public class Archivist : EventEmitter<VaultValue> {
 
 
 	// Clear out the cache entirely
+	// NOTE: we create a new instance as the Clear() function is not thread safe.
 	public void ClearCache() {
 		_cache = new Dictionary<string, VaultValue>();
 	}
@@ -242,7 +243,7 @@ public class Archivist : EventEmitter<VaultValue> {
 		parameters.Add("topic", topic);
 		parameters.Add("index", index);
 		
-		mage.rpcClient.call ("archivist.rawGet", parameters, cb);
+		mage.commandCenter.SendCommand("archivist.rawGet", parameters, cb);
 	}
 	
 	private void rawMGet(JToken queries, JObject options, Action<Exception, JToken> cb) {
@@ -250,7 +251,7 @@ public class Archivist : EventEmitter<VaultValue> {
 		parameters.Add(new JProperty ("queries", queries));
 		parameters.Add("options", options);
 
-		mage.rpcClient.call ("archivist.rawMGet", parameters, cb);
+		mage.commandCenter.SendCommand("archivist.rawMGet", parameters, cb);
 	}
 	
 	private void rawList(string topic, JObject partialIndex, JObject options, Action<Exception, JToken> cb) {
@@ -259,7 +260,7 @@ public class Archivist : EventEmitter<VaultValue> {
 		parameters.Add("partialIndex", partialIndex);
 		parameters.Add("options", options);
 		
-		mage.rpcClient.call ("archivist.rawList", parameters, cb);
+		mage.commandCenter.SendCommand("archivist.rawList", parameters, cb);
 	}
 	
 	private void rawSet(string topic, JObject index, JToken data, string mediaType, string encoding, string expirationTime, Action<Exception, JToken> cb) {
@@ -271,7 +272,7 @@ public class Archivist : EventEmitter<VaultValue> {
 		parameters.Add ("encoding", new JValue(encoding));
 		parameters.Add ("expirationTime", new JValue(expirationTime));
 		
-		mage.rpcClient.call ("archivist.rawSet", parameters, cb);
+		mage.commandCenter.SendCommand("archivist.rawSet", parameters, cb);
 	}
 	
 	private void rawDel(string topic, JObject index, Action<Exception, JToken> cb) {
@@ -279,7 +280,7 @@ public class Archivist : EventEmitter<VaultValue> {
 		parameters.Add ("topic", new JValue(topic));
 		parameters.Add ("index", index);
 
-		mage.rpcClient.call ("archivist.rawDel", parameters, cb);
+		mage.commandCenter.SendCommand("archivist.rawDel", parameters, cb);
 	}
 	
 	

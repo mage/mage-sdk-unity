@@ -67,7 +67,7 @@ public class Module<T> : Singleton<T> where T : class, new() {
 
 	private void registerCommand(string command) {
 		commandHandlerActions.Add(command, (JObject arguments, Action<Exception, JToken> commandCb) => {
-			mage.rpcClient.call(commandPrefix + "." + command, arguments, (Exception error, JToken result) => {
+			mage.commandCenter.SendCommand(commandPrefix + "." + command, arguments, (Exception error, JToken result) => {
 				try {
 					commandCb(error, result);
 				} catch (Exception callbackError) {
@@ -79,7 +79,7 @@ public class Module<T> : Singleton<T> where T : class, new() {
 		commandHandlerFuncs.Add(command, (JObject arguments) => {
 			UsercommandStatus commandStatus = new UsercommandStatus();
 
-			mage.rpcClient.call(commandPrefix + "." + command, arguments, (Exception error, JToken result) => {
+			mage.commandCenter.SendCommand(commandPrefix + "." + command, arguments, (Exception error, JToken result) => {
 				commandStatus.error = error;
 				commandStatus.result = result;
 				commandStatus.done = true;

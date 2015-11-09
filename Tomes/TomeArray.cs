@@ -163,7 +163,8 @@ public class TomeArray : JArray {
 			break;
 		default:
 			if ((property as TomeValue) == null) {
-				Mage.Instance.logger("Tomes").data(property).error("item is not a tome value:");
+				Mage.Instance.logger("Tomes").data(property).error("property is not a tome value: " + index.ToString());
+				UnityEngine.Debug.Log(this);
 			}
 			(property as TomeValue).Assign(value);
 			break;
@@ -172,19 +173,20 @@ public class TomeArray : JArray {
 	
 	//
 	public void Del(int index) {
-		JToken item = this[index];
-		switch (item.Type) {
+		JToken property = this[index];
+		switch (property.Type) {
 		case JTokenType.Array:
-			(item as TomeArray).Destroy();
+			(property as TomeArray).Destroy();
 			break;
 		case JTokenType.Object:
-			(item as TomeObject).Destroy();
+			(property as TomeObject).Destroy();
 			break;
 		default:
-			if ((item as TomeValue) == null) {
-				Mage.Instance.logger("Tomes").data(item).error("item is not a tome value:");
+			if ((property as TomeValue) == null) {
+				Mage.Instance.logger("Tomes").data(property).error("property is not a tome value:" + index.ToString());
+				UnityEngine.Debug.Log(this);
 			}
-			(item as TomeValue).Destroy();
+			(property as TomeValue).Destroy();
 			break;
 		}
 

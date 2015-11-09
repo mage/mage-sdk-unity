@@ -54,7 +54,7 @@ public class HTTPRequest {
 		}
 		
 		// Make a connection and send the request
-		WritePostData (httpRequest, postData, (Exception requestError) => {
+		WritePostData(httpRequest, postData, (Exception requestError) => {
 			if (requestError != null) {
 				cb(requestError, null);
 				return;
@@ -84,11 +84,6 @@ public class HTTPRequest {
 	private static void ReadResponseData (HttpWebRequest httpRequest, Action<Exception, string> cb) {
 		httpRequest.BeginGetResponse(new AsyncCallback((IAsyncResult callbackResult) => {
 			string responseString = null;
-			if (!httpRequest.HaveResponse) {
-				cb(null, responseString);
-				return;
-			}
-
 			try {
 				HttpWebResponse response = (HttpWebResponse)httpRequest.EndGetResponse(callbackResult);
 
