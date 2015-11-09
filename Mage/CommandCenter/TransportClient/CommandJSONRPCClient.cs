@@ -41,8 +41,7 @@ public class CommandJSONRPCClient : CommandTransportClient {
 		// Send rpc batch
 		rpcClient.CallBatch(rpcBatch, headers, mage.cookies, (Exception error, JArray responseArray) => {
 			if (error != null) {
-				logger.verbose("Error when processing command batch");
-				//TODO: mage.eventManager.emit("io.error", error);
+				//TODO: OnTransportError.Invoke("", error);
 				return;
 			}
 

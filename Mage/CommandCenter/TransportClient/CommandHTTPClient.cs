@@ -105,12 +105,7 @@ public class CommandHTTPClient : CommandTransportClient {
 					}
 				}
 
-				JObject transportError = new JObject();
-				transportError.Add("reason", new JValue(error));
-				transportError.Add("info", new JValue(responseString));
-
-				logger.data(requestError).error("Error when sending command batch request");
-				mage.eventManager.emit("io.error." + error, transportError);
+				OnTransportError.Invoke(error, requestError);
 				return;
 			}
 
@@ -119,8 +114,7 @@ public class CommandHTTPClient : CommandTransportClient {
 			try {
 				responseArray = JArray.Parse(responseString);
 			} catch (Exception parseError) {
-				logger.verbose("Error when parsing command batch response");
-				mage.eventManager.emit("io.error.parse", null);
+				OnTransportError.Invoke("parse", parseError);
 				return;
 			}
 

@@ -48,6 +48,7 @@ public class CommandCenter {
 
 		// Setup event handlers
 		transportClient.OnSendComplete += BatchComplete;
+		transportClient.OnTransportError += TransportError;
 	}
 
 	//
@@ -64,6 +65,8 @@ public class CommandCenter {
 
 	//
 	private void SendBatch() {
+		mage.eventManager.emit("io.send", null);
+
 		lock ((object)currentBatch) {
 			// Swap batches around locking the queue
 			sendingBatch = currentBatch;
@@ -74,9 +77,19 @@ public class CommandCenter {
 			transportClient.SendBatch(sendingBatch);
 		}
 	}
+	
+	// Resend batch
+	public void Resend() {
+		mage.eventManager.emit("io.resend", null);
+
+		logger.debug("Re-sending batch: " + sendingBatch.queryId);
+		transportClient.SendBatch(sendingBatch);
+	}
 
 	//
 	private void BatchComplete() {
+		mage.eventManager.emit("io.response", null);
+
 		lock ((object)currentBatch) {
 			sendingBatch = null;
 			
@@ -87,10 +100,10 @@ public class CommandCenter {
 		}
 	}
 	
-	// Resend batch
-	public void Resend() {
-		logger.debug("Re-sending batch: " + sendingBatch.queryId);
-		transportClient.SendBatch(sendingBatch);
+	//
+	private void TransportError(string errorType, Exception error) {
+		logger.data(error).error("Error when sending command batch request");
+		mage.eventManager.emit("io.error." + errorType, null);
 	}
 
 	// Try and send a command right away if there is nothing being sent.
