@@ -69,6 +69,18 @@ public class MessageStream {
 	}
 
 
+	//
+	public void Dispose() {
+		// Stop the transport client if it exists
+		if (transportClient != null) {
+			transportClient.stop ();
+		}
+
+		initializeMessageList();
+		_sessionKey = null;
+	}
+
+
 	// Updates URI and credentials 
 	public void setEndpoint(string baseURL, string username = null, string password = null) {
 		_endpoint = baseURL + "/msgstream";

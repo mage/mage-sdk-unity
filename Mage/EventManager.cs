@@ -29,8 +29,7 @@ public class EventManager : EventEmitter<JToken> {
 			}
 
 			// Emit the event
-			logger.debug ("Emitting '" + eventTag + "'");
-			//logger.data(eventData).verbose ("'" + eventTag + "' Data:");
+			logger.debug("Emitting '" + eventTag + "'");
 			mage.eventManager.emit (eventTag, eventData);
 		}
 	}

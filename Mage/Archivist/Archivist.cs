@@ -4,7 +4,7 @@ using System.Collections.Generic;
 
 using Newtonsoft.Json.Linq;
 
-public class Archivist : EventEmitter<JObject> {
+public class Archivist : EventEmitter<VaultValue> {
 	private Mage mage { get { return Mage.Instance; } }
 	private Logger logger { get { return mage.logger("archivist"); } }
 
@@ -14,26 +14,48 @@ public class Archivist : EventEmitter<JObject> {
 
 	// Constructor
 	public Archivist () {
-		// Apply changes to cached vault values when applyDiff event is fired
-		mage.eventManager.on ("archivist:applyDiff", (object sender, JToken diff) => {
-			string topic = diff["key"]["topic"].ToString();
-			JObject index = (JObject)diff["key"]["index"];
-			string cacheKeyName = getCacheKey(topic, index);
+		// Set data to vault value when set event received
+		mage.eventManager.on("archivist:set", (object sender, JToken info) => {
+			string topic = (string)info["key"]["topic"];
+			JObject index = (JObject)info["key"]["index"];
+			JToken data = info["value"]["data"];
+			string mediaType = (string)info["value"]["mediaType"];
+			int? expirationTime = (int?)info["expirationTime"];
+			ValueSet(topic, index, data, mediaType, expirationTime);
+		});
 
-			// Check if cache contains value
-			if (!_cache.ContainsKey(cacheKeyName)) {
-				logger.debug("Can't apply diff, value doesn't exist: " + cacheKeyName);
-				return;
-			}
+		// Del data inside vault value when del event received
+		mage.eventManager.on("archivist:del", (object sender, JToken info) => {
+			string topic = (string)info["key"]["topic"];
+			JObject index = (JObject)info["key"]["index"];
+			ValueDel(topic, index);
+		});
 
-			logger.data(diff["diff"]).verbose("Applying diff to vault value: " + cacheKeyName);
-			_cache[cacheKeyName].ApplyDiff((JArray)diff["diff"]);
+		// Touch vault value expiry when touch event received
+		mage.eventManager.on("archivist:touch", (object sender, JToken info) => {
+			string topic = (string)info["key"]["topic"];
+			JObject index = (JObject)info["key"]["index"];
+			int? expirationTime = (int?)info["expirationTime"];
+			ValueTouch(topic, index, expirationTime);
+		});
+
+		// Apply changes to vault value when applyDiff event is received
+		mage.eventManager.on("archivist:applyDiff", (object sender, JToken info) => {
+			string topic = (string)info["key"]["topic"];
+			JObject index = (JObject)info["key"]["index"];
+			JArray diff = (JArray)info["diff"];
+			int? expirationTime = (int?)info["expirationTime"];
+			ValueApplyDiff(topic, index, diff, expirationTime);
 		});
 	}
 
 
+	////////////////////////////////////////////
+	//           Cache Manipulation           //
+	////////////////////////////////////////////
+
 	// Returns string id of a vault value for given topic and index
-	private string getCacheKey (string topic, JObject index) {
+	private string GetCacheKey (string topic, JObject index) {
 		// Sort the keys so order of index is always the same
 		List<string> indexKeys = new List<string> ();
 		foreach (var property in index) {
@@ -54,8 +76,166 @@ public class Archivist : EventEmitter<JObject> {
 	}
 
 
+	// Returns cache value if it exists and has not passed max allowed age
+	private VaultValue GetCacheValue(string cacheKeyName, int? maxAge = null) {
+		if (!_cache.ContainsKey(cacheKeyName)) {
+			return null;
+		}
+
+		VaultValue value = _cache[cacheKeyName];
+		double timespan = (DateTime.Now - value.writtenAt).TotalMilliseconds;
+		if (maxAge != null && timespan > maxAge * 1000) {
+			return null;
+		}
+
+		return value;
+	}
+	
+
+	// Ensures a cache value exists then sets it based on info provided
+	private void SetCacheValue(JObject info) {
+		string topic = (string)info["key"]["topic"];
+		JObject index = (JObject)info["key"]["index"];
+		string cacheKeyName = GetCacheKey(topic, index);
+		VaultValue cacheValue = GetCacheValue(cacheKeyName);
+		if (cacheValue == null) {
+			cacheValue = new VaultValue(topic, index);
+			_cache.Add(cacheKeyName, cacheValue);
+		}
+
+		JObject rawValue = (JObject)info["value"];
+		if (rawValue != null) {
+			ValueSet(topic, index, rawValue["data"], (string)rawValue["mediaType"], (int?)info["expirationTime"]);
+		} else {
+			ValueDel(topic, index);
+		}
+	}
+
+
+	// Return cache dictionary
+	public Dictionary<string, VaultValue> GetCache() {
+		return _cache;
+	}
+
+
+	// Clear out the cache entirely
+	public void ClearCache() {
+		_cache = new Dictionary<string, VaultValue>();
+	}
+
+
+	// Remove a vault value from the cache by it's topic and index
+	public void DeleteCacheItem(string topic, JObject index) {
+		DeleteCacheItem(GetCacheKey(topic, index));
+	}
+
+
+	// Remove a vault value from the cache by it's cache key name
+	public void DeleteCacheItem(string cacheKeyName) {
+		if (!_cache.ContainsKey(cacheKeyName)) {
+			return;
+		}
+
+		_cache.Remove(cacheKeyName);
+	}
+
+
 	////////////////////////////////////////////
-	//       Raw Communication Functions      //
+	//        Vault Value Manipulation        //
+	////////////////////////////////////////////
+	private void ValueSet(string topic, JObject index, JToken data, string mediaType, int? expirationTime) {
+		// Try and get cache value. If it exists delete existing value
+		// in preparation for set. Otherwise create a new vault value.
+		string cacheKeyName = GetCacheKey(topic, index);
+		VaultValue cacheValue = GetCacheValue(cacheKeyName);
+		if (cacheValue == null) {
+			cacheValue = new VaultValue(topic, index);
+			_cache.Add(cacheKeyName, cacheValue);
+		} else {
+			cacheValue.Del();
+		}
+
+		// Set data to vault value
+		cacheValue.SetData(mediaType, data);
+		cacheValue.Touch(expirationTime);
+
+		// Emit set event
+		this.emit(topic + ":set", cacheValue);
+	}
+
+	private void ValueAdd(string topic, JObject index, JToken data, string mediaType, int? expirationTime) {
+		// Check if value already exists
+		string cacheKeyName = GetCacheKey(topic, index);
+		VaultValue cacheValue = GetCacheValue(cacheKeyName);
+		if (cacheValue != null) {
+			logger.error("Could not add value (already exists): " + cacheKeyName);
+			return;
+		}
+
+		// Create new vault value
+		cacheValue = new VaultValue(topic, index);
+		_cache.Add(cacheKeyName, cacheValue);
+
+		// Set data to vault value
+		cacheValue.SetData(mediaType, data);
+		cacheValue.Touch(expirationTime);
+		
+		// Emit add event
+		this.emit(topic + ":add", cacheValue);
+	}
+
+	private void ValueDel(string topic, JObject index) {
+		// Check if value already exists
+		string cacheKeyName = GetCacheKey(topic, index);
+		VaultValue cacheValue = GetCacheValue(cacheKeyName);
+		if (cacheValue == null) {
+			logger.error("Could not delete value (doesn't exist): " + cacheKeyName);
+			return;
+		}
+		
+		// Do delete
+		cacheValue.Del();
+		
+		// Emit touch event
+		this.emit(topic + ":del", cacheValue);
+	}
+
+	private void ValueTouch(string topic, JObject index, int? expirationTime) {
+		// Check if value already exists
+		string cacheKeyName = GetCacheKey(topic, index);
+		VaultValue cacheValue = GetCacheValue(cacheKeyName);
+		if (cacheValue == null) {
+			logger.error("Could not touch value (doesn't exist): " + cacheKeyName);
+			return;
+		}
+
+		// Do touch
+		cacheValue.Touch(expirationTime);
+		
+		// Emit touch event
+		this.emit(topic + ":touch", cacheValue);
+	}
+
+	private void ValueApplyDiff(string topic, JObject index, JArray diff, int? expirationTime) {
+		// Make sure value exists
+		string cacheKeyName = GetCacheKey(topic, index);
+		VaultValue cacheValue = GetCacheValue(cacheKeyName);
+		if (cacheValue == null) {
+			logger.error("Got a diff for a non-existent value:" + cacheKeyName);
+			return;
+		}
+		
+		// Apply diff
+		cacheValue.ApplyDiff(diff);
+		cacheValue.Touch(expirationTime);
+		
+		// Emit applyDiff event
+		this.emit(topic + ":applyDiff", cacheValue);
+	}
+
+
+	////////////////////////////////////////////
+	//            Raw Communication           //
 	////////////////////////////////////////////
 	private void rawGet(string topic, JObject index, Action<Exception, JToken> cb) {
 		JObject parameters = new JObject();
@@ -107,22 +287,22 @@ public class Archivist : EventEmitter<JObject> {
 	//           Exposed Operations           //
 	////////////////////////////////////////////
 	public void get(string topic, JObject index, JObject options, Action<Exception, JToken> cb) {
-		// Check cache
-		string cacheKeyName = getCacheKey (topic, index);
-		if (_cache.ContainsKey(cacheKeyName)) {
-			cb(null, _cache[cacheKeyName].data);
-			return;
-		}
-		
 		// Default options
-		if (options == null) {
-			options = new JObject();
+		options = (options != null) ? options : new JObject();
+		if (options["optional"] == null) {
+			options.Add("optional", new JValue(false)); 
 		}
 
-		if (options["optional"] == null) {
-			options.Add ("optional", new JValue(false));
+
+		// Check cache
+		string cacheKeyName = GetCacheKey(topic, index);
+		VaultValue cacheValue = GetCacheValue(cacheKeyName, (int?)options["maxAge"]);
+		if (cacheValue != null) {
+			cb(null, cacheValue.data);
+			return;
 		}
 	
+
 		// Get data from server
 		rawGet (topic, index, (Exception error, JToken result) => {
 			if (error != null) {
@@ -130,28 +310,28 @@ public class Archivist : EventEmitter<JObject> {
 				return;
 			}
 
-			//if (result == null && !options ["optional"]) {
-			//	return cb (new Exception ("ValueNotFound"), null);
-			//}
-
-			VaultValue newValue;
+			// Parse value
 			try {
-				// Create vault value
-				newValue = new VaultValue((JObject)result);
-				
-				// Add value to cache
-				_cache.Add (cacheKeyName, newValue);
+				SetCacheValue((JObject)result);
 			} catch (Exception cacheError) {
 				cb(cacheError, null);
 				return;
 			}
 
 			// Return result
-			cb (null, newValue.data);
+			cb (null, GetCacheValue(cacheKeyName).data);
 		});
 	}
 
 	public void mget(JArray queries, JObject options, Action<Exception, JToken> cb) {
+		// Default options
+		options = (options != null) ? options : new JObject();
+		if (options["optional"] == null) {
+			options.Add("optional", new JValue(false)); 
+		}
+
+
+		// Keep track of actual data we need from server
 		JArray realQueries = new JArray();
 		Dictionary<string, int> realQueryKeys = new Dictionary<string, int>();
 		JArray responseArray = new JArray();
@@ -159,9 +339,12 @@ public class Archivist : EventEmitter<JObject> {
 
 		// Check cache
 		foreach (JObject query in queries) {
-			string cacheKeyName = getCacheKey (query["topic"].ToString(), query["index"] as JObject);
-			if (_cache.ContainsKey(cacheKeyName)) {
-				responseArray.Add(_cache[cacheKeyName].data);
+			string topic = (string)query["topic"];
+			JObject index = (JObject)query["index"];
+			string cacheKeyName = GetCacheKey(topic, index);
+			VaultValue cacheValue = GetCacheValue(cacheKeyName, (int?)options["maxAge"]);
+			if (cacheValue != null) {
+				responseArray.Add(cacheValue.data);
 			} else {
 				realQueryKeys.Add(cacheKeyName, responseArray.Count);
 				responseArray.Add(null);
@@ -177,34 +360,26 @@ public class Archivist : EventEmitter<JObject> {
 		}
 
 
-		// Default options
-
-
 		// Get data from server
-		rawMGet (realQueries, options, (Exception error, JToken result) => {
+		rawMGet (realQueries, options, (Exception error, JToken results) => {
 			if (error != null) {
 				cb (error, null);
 				return;
 			}
 
 			try {
-				JArray topicValues = (JArray)result;
-				foreach (JObject topicValue in topicValues) {
+				foreach (JObject topicValue in results as JArray) {
 					// Determine value cacheKeyName
-					string valueTopic = topicValue["key"]["topic"].ToString();
-					JObject valueIndex = (JObject)topicValue["key"]["index"];
-					string cacheKeyName = getCacheKey(valueTopic, valueIndex);
+					string topic = (string)topicValue["key"]["topic"];
+					JObject index = (JObject)topicValue["key"]["index"];
+					string cacheKeyName = GetCacheKey(topic, index);
 
-					JToken responseResult = null;
-					if (topicValue["value"] != null) {
-						VaultValue newValue = new VaultValue(topicValue);
-						_cache.Add (cacheKeyName, newValue);
-						responseResult = (JToken)newValue.data;
-					}
+					// Set value to cache
+					SetCacheValue(topicValue);
 
 					// Add value to response
 					int responseKey = realQueryKeys[cacheKeyName];
-					responseArray[responseKey].Replace(responseResult);
+					responseArray[responseKey].Replace(GetCacheValue(cacheKeyName).data);
 				}
 			} catch (Exception cacheError) {
 				cb(cacheError, null);
@@ -217,6 +392,14 @@ public class Archivist : EventEmitter<JObject> {
 	}
 	
 	public void mget(JObject queries, JObject options, Action<Exception, JToken> cb) {
+		// Default options
+		options = (options != null) ? options : new JObject();
+		if (options["optional"] == null) {
+			options.Add("optional", new JValue(false)); 
+		}
+
+
+		// Keep track of actual data we need from server
 		JObject realQueries = new JObject();
 		Dictionary<string, string> realQueryKeys = new Dictionary<string, string>();
 		JObject responseObject = new JObject();
@@ -224,9 +407,10 @@ public class Archivist : EventEmitter<JObject> {
 
 		// Check cache
 		foreach (var query in queries) {
-			string cacheKeyName = getCacheKey (query.Value["topic"].ToString(), query.Value["index"] as JObject);
-			if (_cache.ContainsKey(cacheKeyName)) {
-				responseObject.Add(query.Key, _cache[cacheKeyName].data);
+			string cacheKeyName = GetCacheKey(query.Value["topic"].ToString(), query.Value["index"] as JObject);
+			VaultValue cacheValue = GetCacheValue(cacheKeyName, (int?)options["maxAge"]);
+			if (cacheValue != null) {
+				responseObject.Add(query.Key, cacheValue.data);
 			} else {
 				realQueryKeys.Add(cacheKeyName, query.Key);
 				realQueries.Add(query.Key, query.Value);
@@ -240,35 +424,27 @@ public class Archivist : EventEmitter<JObject> {
 			return;
 		}
 
-		
-		// Default options
-
 
 		// Get data from server
-		rawMGet (realQueries, options, (Exception error, JToken result) => {
+		rawMGet (realQueries, options, (Exception error, JToken results) => {
 			if (error != null) {
 				cb (error, null);
 				return;
 			}
 
 			try {
-				JArray topicValues = (JArray)result;
-				foreach (JObject topicValue in topicValues) {
+				foreach (JObject topicValue in results as JArray) {
 					// Determine value cacheKeyName
 					string valueTopic = topicValue["key"]["topic"].ToString();
 					JObject valueIndex = (JObject)topicValue["key"]["index"];
-					string cacheKeyName = getCacheKey(valueTopic, valueIndex);
+					string cacheKeyName = GetCacheKey(valueTopic, valueIndex);
 
-					JToken responseResult = null;
-					if (topicValue["value"] != null) {
-						VaultValue newValue = new VaultValue(topicValue);
-						_cache.Add (cacheKeyName, newValue);
-						responseResult = (JToken)newValue.data;
-					}
+					// Set value to cache
+					SetCacheValue(topicValue);
 
 					// Add value to response
 					string responseKey = realQueryKeys[cacheKeyName];
-					responseObject.Add(responseKey, responseResult);
+					responseObject.Add(responseKey, GetCacheValue(cacheKeyName).data);
 				}
 			} catch (Exception cacheError) {
 				cb(cacheError, null);

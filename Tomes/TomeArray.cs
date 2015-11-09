@@ -162,6 +162,9 @@ public class TomeArray : JArray {
 			(property as TomeObject).Assign(value);
 			break;
 		default:
+			if ((property as TomeValue) == null) {
+				Mage.Instance.logger("Tomes").data(property).error("item is not a tome value:");
+			}
 			(property as TomeValue).Assign(value);
 			break;
 		}
@@ -178,6 +181,9 @@ public class TomeArray : JArray {
 			(item as TomeObject).Destroy();
 			break;
 		default:
+			if ((item as TomeValue) == null) {
+				Mage.Instance.logger("Tomes").data(item).error("item is not a tome value:");
+			}
 			(item as TomeValue).Destroy();
 			break;
 		}
@@ -228,7 +234,9 @@ public class TomeArray : JArray {
 		this.Set(this.Count, item);
 	}
 
-	//
+	// NOTE: Tome behavior for a del operation is to replace values with null.
+	// However a pop operation does in fact remove the item as well as
+	// firing the del event. Thus we do both below.
 	public JToken Pop() {
 		JToken last = this[this.Count - 1];
 		this.Del(this.Count - 1);
@@ -236,7 +244,9 @@ public class TomeArray : JArray {
 		return last;
 	}
 
-	//
+	// NOTE: Tome behavior for a del operation is to replace values with null.
+	// However a shift operation does in fact remove the item as well as
+	// firing the del event. Thus we do both below.
 	public JToken Shift() {
 		JToken first = this[0];
 		this.Del(0);

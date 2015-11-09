@@ -82,7 +82,7 @@ public class ShortPolling : TransportClient {
 		// Send poll request and wait for a response
 		string endpoint = _getEndpoint();
 		logger.debug ("Sending request: " + endpoint);
-		HTTPRequest.Get(endpoint, _getHeaders(), (Exception requestError, string responseString) => {
+		HTTPRequest.Get(endpoint, _getHeaders(), mage.cookies, (Exception requestError, string responseString) => {
 			if (requestError != null) {
 				logger.error (requestError.ToString());
 				queueNextRequest(_errorInterval);

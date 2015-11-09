@@ -38,6 +38,7 @@ public class Module<T> : Singleton<T> where T : class, new() {
 			queries.Add(topic, query);
 		}
 
+		staticData = null;
 		mage.archivist.mget (queries, null, (Exception error, JToken data)=>{
 			if (error != null) {
 				cb(error);

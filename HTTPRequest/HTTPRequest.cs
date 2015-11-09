@@ -5,15 +5,13 @@ using System.IO;
 using System.Text;
 
 public class HTTPRequest {
-	public static Mage mage { get { return Mage.Instance; } }
-
-	public static void Get(string url, Dictionary<string, string> headers, Action<Exception, string> cb) {
+	public static HttpWebRequest Get(string url, Dictionary<string, string> headers, CookieContainer cookies, Action<Exception, string> cb) {
 		// Initialize request instance
 		HttpWebRequest httpRequest = (HttpWebRequest)WebRequest.Create(url);
 		httpRequest.Method = WebRequestMethods.Http.Get;
 
-		if (mage.cookies != null) {
-			httpRequest.CookieContainer = mage.cookies;
+		if (cookies != null) {
+			httpRequest.CookieContainer = cookies;
 		}
 
 		// Set request headers
@@ -25,14 +23,16 @@ public class HTTPRequest {
 
 		// Process the response
 		ReadResponseData(httpRequest, cb);
-	}
 
-	public static void Post(string url, string contentType, string postData, Dictionary<string, string> headers, Action<Exception, string> cb) {
+		return httpRequest;
+	}
+	
+	public static HttpWebRequest Post(string url, string contentType, string postData, Dictionary<string, string> headers, CookieContainer cookies, Action<Exception, string> cb) {
 		byte[] binaryPostData = Encoding.UTF8.GetBytes(postData);
-		Post(url, contentType, binaryPostData, headers, cb);
+		return Post(url, contentType, binaryPostData, headers, cookies, cb);
 	}
 
-	public static void Post(string url, string contentType, byte[] postData, Dictionary<string, string> headers, Action<Exception, string> cb) {
+	public static HttpWebRequest Post(string url, string contentType, byte[] postData, Dictionary<string, string> headers, CookieContainer cookies, Action<Exception, string> cb) {
 		// Initialize request instance
 		HttpWebRequest httpRequest = (HttpWebRequest)WebRequest.Create(url);
 		httpRequest.Method = WebRequestMethods.Http.Post;
@@ -42,8 +42,8 @@ public class HTTPRequest {
 			httpRequest.ContentType = contentType;
 		}
 
-		if (mage.cookies != null) {
-			httpRequest.CookieContainer = mage.cookies;
+		if (cookies != null) {
+			httpRequest.CookieContainer = cookies;
 		}
 		
 		// Set request headers
@@ -63,6 +63,8 @@ public class HTTPRequest {
 			// Process the response
 			ReadResponseData(httpRequest, cb);
 		});
+
+		return httpRequest;
 	}
 
 	private static void WritePostData (HttpWebRequest httpRequest, byte[] postData, Action<Exception> cb) {
