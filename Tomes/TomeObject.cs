@@ -136,8 +136,8 @@ public class TomeObject : JObject {
 	//
 	public void Destroy() {
 		lock((object)this) {
-			foreach (JToken value in this.Values()) {
-				Tome.Destroy(value);
+			foreach (var property in this) {
+				Tome.Destroy(property.Value);
 			}
 
 			if (onDestroy != null) {
