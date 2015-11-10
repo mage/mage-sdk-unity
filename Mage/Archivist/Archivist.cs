@@ -131,6 +131,7 @@ public class Archivist : EventEmitter<VaultValue> {
 	// Remove a vault value from the cache by it's cache key name
 	public void DeleteCacheItem(string cacheKeyName) {
 		lock ((object)this) {
+			logger.debug("Deleteing cache item: " + cacheKeyName);
 			if (!_cache.ContainsKey(cacheKeyName)) {
 				return;
 			}
