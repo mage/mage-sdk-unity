@@ -78,36 +78,31 @@ public class Archivist : EventEmitter<VaultValue> {
 
 	// Returns cache value if it exists and has not passed max allowed age
 	private VaultValue GetCacheValue(string cacheKeyName, int? maxAge = null) {
-		if (!_cache.ContainsKey(cacheKeyName)) {
-			return null;
-		}
+		lock ((object)this) {
+			if (!_cache.ContainsKey(cacheKeyName)) {
+				return null;
+			}
 
-		VaultValue value = _cache[cacheKeyName];
-		double timespan = (DateTime.Now - value.writtenAt).TotalMilliseconds;
-		if (maxAge != null && timespan > maxAge * 1000) {
-			return null;
-		}
+			VaultValue value = _cache[cacheKeyName];
+			double timespan = (DateTime.Now - value.writtenAt).TotalMilliseconds;
+			if (maxAge != null && timespan > maxAge * 1000) {
+				return null;
+			}
 
-		return value;
+			return value;
+		}
 	}
 	
 
 	// Ensures a cache value exists then sets it based on info provided
-	private void SetCacheValue(JObject info) {
-		string topic = (string)info["key"]["topic"];
-		JObject index = (JObject)info["key"]["index"];
-		string cacheKeyName = GetCacheKey(topic, index);
-		VaultValue cacheValue = GetCacheValue(cacheKeyName);
-		if (cacheValue == null) {
-			cacheValue = new VaultValue(topic, index);
-			_cache.Add(cacheKeyName, cacheValue);
-		}
+	private VaultValue CreateCacheValue(string topic, JObject index) {
+		lock ((object)this) {
+			VaultValue cacheValue = new VaultValue(topic, index);
 
-		JObject rawValue = (JObject)info["value"];
-		if (rawValue != null) {
-			ValueSet(topic, index, rawValue["data"], (string)rawValue["mediaType"], (int?)info["expirationTime"]);
-		} else {
-			ValueDel(topic, index);
+			string cacheKeyName = GetCacheKey(topic, index);
+			_cache.Add(cacheKeyName, cacheValue);
+
+			return cacheValue;
 		}
 	}
 
@@ -121,7 +116,9 @@ public class Archivist : EventEmitter<VaultValue> {
 	// Clear out the cache entirely
 	// NOTE: we create a new instance as the Clear() function is not thread safe.
 	public void ClearCache() {
-		_cache = new Dictionary<string, VaultValue>();
+		lock ((object)this) {
+			_cache.Clear();
+		}
 	}
 
 
@@ -133,25 +130,38 @@ public class Archivist : EventEmitter<VaultValue> {
 
 	// Remove a vault value from the cache by it's cache key name
 	public void DeleteCacheItem(string cacheKeyName) {
-		if (!_cache.ContainsKey(cacheKeyName)) {
-			return;
-		}
+		lock ((object)this) {
+			if (!_cache.ContainsKey(cacheKeyName)) {
+				return;
+			}
 
-		_cache.Remove(cacheKeyName);
+			_cache.Remove(cacheKeyName);
+		}
 	}
 
 
 	////////////////////////////////////////////
 	//        Vault Value Manipulation        //
 	////////////////////////////////////////////
+	private void ValueSetOrDelete(JObject info) {
+		string topic = (string)info["key"]["topic"];
+		JObject index = (JObject)info["key"]["index"];
+		JObject rawValue = (JObject)info["value"];
+
+		if (rawValue != null) {
+			ValueSet(topic, index, rawValue["data"], (string)rawValue["mediaType"], (int?)info["expirationTime"]);
+		} else {
+			ValueDel(topic, index);
+		}
+	}
+
 	private void ValueSet(string topic, JObject index, JToken data, string mediaType, int? expirationTime) {
 		// Try and get cache value. If it exists delete existing value
 		// in preparation for set. Otherwise create a new vault value.
 		string cacheKeyName = GetCacheKey(topic, index);
 		VaultValue cacheValue = GetCacheValue(cacheKeyName);
 		if (cacheValue == null) {
-			cacheValue = new VaultValue(topic, index);
-			_cache.Add(cacheKeyName, cacheValue);
+			cacheValue = CreateCacheValue(topic, index);
 		} else {
 			cacheValue.Del();
 		}
@@ -174,8 +184,7 @@ public class Archivist : EventEmitter<VaultValue> {
 		}
 
 		// Create new vault value
-		cacheValue = new VaultValue(topic, index);
-		_cache.Add(cacheKeyName, cacheValue);
+		cacheValue = CreateCacheValue(topic, index);
 
 		// Set data to vault value
 		cacheValue.SetData(mediaType, data);
@@ -313,7 +322,7 @@ public class Archivist : EventEmitter<VaultValue> {
 
 			// Parse value
 			try {
-				SetCacheValue((JObject)result);
+				ValueSetOrDelete((JObject)result);
 			} catch (Exception cacheError) {
 				cb(cacheError, null);
 				return;
@@ -376,7 +385,7 @@ public class Archivist : EventEmitter<VaultValue> {
 					string cacheKeyName = GetCacheKey(topic, index);
 
 					// Set value to cache
-					SetCacheValue(topicValue);
+					ValueSetOrDelete(topicValue);
 
 					// Add value to response
 					int responseKey = realQueryKeys[cacheKeyName];
@@ -441,7 +450,7 @@ public class Archivist : EventEmitter<VaultValue> {
 					string cacheKeyName = GetCacheKey(valueTopic, valueIndex);
 
 					// Set value to cache
-					SetCacheValue(topicValue);
+					ValueSetOrDelete(topicValue);
 
 					// Add value to response
 					string responseKey = realQueryKeys[cacheKeyName];
