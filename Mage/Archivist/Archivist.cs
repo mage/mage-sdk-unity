@@ -222,7 +222,7 @@ public class Archivist : EventEmitter<VaultValue> {
 		string cacheKeyName = GetCacheKey(topic, index);
 		VaultValue cacheValue = GetCacheValue(cacheKeyName);
 		if (cacheValue == null) {
-			logger.error("Got a diff for a non-existent value:" + cacheKeyName);
+			logger.warning("Got a diff for a non-existent value:" + cacheKeyName);
 			return;
 		}
 		

@@ -97,10 +97,7 @@ public class CommandHTTPClient : CommandTransportClient {
 				if (requestError is WebException) {
 					WebException webException = requestError as WebException;
 					HttpWebResponse webResponse = webException.Response as HttpWebResponse;
-					if (
-						webException.Status == WebExceptionStatus.ConnectFailure ||
-						(webResponse != null && webResponse.StatusCode == HttpStatusCode.ServiceUnavailable)
-					) {
+					if (webResponse != null && webResponse.StatusCode == HttpStatusCode.ServiceUnavailable) {
 						error = "maintenance";
 					}
 				}

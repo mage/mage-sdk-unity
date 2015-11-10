@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Net;
 using System.IO;
 using System.Text;
+using System.Threading;
+
 
 public class HTTPRequest {
 	public static HttpWebRequest Get(string url, Dictionary<string, string> headers, CookieContainer cookies, Action<Exception, string> cb) {
@@ -81,16 +83,31 @@ public class HTTPRequest {
 		}, null);
 	}
 
-	private static void ReadResponseData (HttpWebRequest httpRequest, Action<Exception, string> cb) {
+	private static void ReadResponseData(HttpWebRequest httpRequest, Action<Exception, string> cb) {
+		/**
+		 * NOTE: we need to implement the timeout ourselves. HttpWebRequest does not implement
+		 * timeout on asynchronous methods. Check below link for more information:
+		 * https://msdn.microsoft.com/en-us/library/system.net.httpwebrequest.timeout(v=vs.110).aspx
+		 **/
+		Timer timeoutTimer = new Timer((object state) => {
+			httpRequest.Abort();
+		}, null, httpRequest.Timeout, Timeout.Infinite);
+
+		// Begin waiting for a response
 		httpRequest.BeginGetResponse(new AsyncCallback((IAsyncResult callbackResult) => {
+			// Cleaup timeout
+			timeoutTimer.Dispose();
+			timeoutTimer = null;
+
+			// Process response
 			string responseString = null;
 			try {
 				HttpWebResponse response = (HttpWebResponse)httpRequest.EndGetResponse(callbackResult);
-
+				
 				using (StreamReader httpWebStreamReader = new StreamReader(response.GetResponseStream())) {
 					responseString = httpWebStreamReader.ReadToEnd();
 				}
-
+				
 				response.Close();
 			} catch (Exception error) {
 				cb(error, null);

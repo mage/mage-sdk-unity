@@ -102,9 +102,16 @@ public class LongPolling : TransportClient {
 			}
 
 			if (requestError != null) {
-				if (requestError is WebException && (requestError as WebException).Status == WebExceptionStatus.ReceiveFailure) {
-					// Don't log receive failures as this is just the long polling
-					// connection being closed with no repsonse. It is retry safe.
+				if (requestError is WebException) {
+					// Only log web exceptions if they aren't an empty response or gateway timeout
+					WebException webException = requestError as WebException;
+					HttpWebResponse webResponse = webException.Response as HttpWebResponse;
+					if (
+						webException.Status != WebExceptionStatus.ReceiveFailure &&
+						(webResponse == null || webResponse.StatusCode != HttpStatusCode.GatewayTimeout)
+					) {
+						logger.error(requestError.ToString());
+					}
 				} else {
 					logger.error(requestError.ToString());
 				}
