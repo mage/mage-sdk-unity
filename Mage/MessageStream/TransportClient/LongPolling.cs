@@ -122,7 +122,7 @@ public class LongPolling : TransportClient {
 
 			// Call the message processer hook and re-call request loop function
 			try {
-				logger.debug("Recieved response: " + responseString);
+				logger.verbose("Recieved response: " + responseString);
 				if (responseString != null) {
 					_processMessages(responseString);
 				}

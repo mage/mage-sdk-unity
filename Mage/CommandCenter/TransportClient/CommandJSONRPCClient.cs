@@ -40,6 +40,8 @@ public class CommandJSONRPCClient : CommandTransportClient {
 
 		// Send rpc batch
 		rpcClient.CallBatch(rpcBatch, headers, mage.cookies, (Exception error, JArray responseArray) => {
+			logger.data(responseArray).verbose("Recieved response: ");
+
 			if (error != null) {
 				//TODO: OnTransportError.Invoke("", error);
 				return;

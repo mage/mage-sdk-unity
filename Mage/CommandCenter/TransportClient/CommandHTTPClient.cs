@@ -91,6 +91,8 @@ public class CommandHTTPClient : CommandTransportClient {
 		}
 
 		HTTPRequest.Post(batchUrl, "", postData, headers, mage.cookies, (Exception requestError, string responseString) => {
+			logger.verbose("Recieved response: " + responseString);
+
 			// Check if there was a transport error
 			if (requestError != null) {
 				string error = "network";
