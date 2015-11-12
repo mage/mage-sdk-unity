@@ -95,7 +95,7 @@ public class HTTPRequest {
 
 		// Begin waiting for a response
 		httpRequest.BeginGetResponse(new AsyncCallback((IAsyncResult callbackResult) => {
-			// Cleaup timeout
+			// Cleanup timeout
 			timeoutTimer.Dispose();
 			timeoutTimer = null;
 
