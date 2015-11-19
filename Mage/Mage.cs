@@ -21,7 +21,6 @@ public class Mage : Singleton<Mage> {
 	public MessageStream messageStream;
 	public Archivist archivist;
 
-	private ConsoleWriter _consoleWriter;
 	private Logger _logger;
 
 	//
@@ -53,7 +52,6 @@ public class Mage : Singleton<Mage> {
 	// able to re-initialize them inside the setup function.
 	public Mage() {
 		// Setup log writters
-		_consoleWriter = new ConsoleWriter();
 		_logger = logger("mage");
 
 		// TODO: properly check the damn certificate, for now ignore invalid ones (fix issue on Android/iOS)
