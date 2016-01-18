@@ -5,7 +5,8 @@ public class MonoSingleton<T> : MonoBehaviour where T : class, new() {
 	private static T _Instance;
 	public static T Instance { get { return _Instance; } }
 
-	void Awake() {
+	// Use this for initialization before any start methods are called
+	protected void Awake() {
 		if (_Instance != null) {
 			GameObject.DestroyImmediate(gameObject);
 			return;
