@@ -37,7 +37,6 @@ public class Logger {
 				break;
 			default:
 				throw new Exception("Unknown Log Writer: " + writer);
-				break;
 			}
 		}
 	}

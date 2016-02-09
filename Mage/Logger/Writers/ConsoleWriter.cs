@@ -84,11 +84,7 @@ public class ConsoleWriter : LogWriter {
 	}
 
 	private string makeLogString(string channel, string context, string message) {
-		string messageString = "[" + channel + "] ";
-		messageString += "[" + context + "] ";
-		messageString += message;
-		
-		return messageString;
+		return String.Format("[{0}] [{1}] {2}", channel, context, message);
 	}
 	
 	private void Verbose(object sender, LogEntry logEntry) {

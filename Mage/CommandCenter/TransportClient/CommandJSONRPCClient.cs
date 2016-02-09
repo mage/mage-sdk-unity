@@ -20,7 +20,7 @@ public class CommandJSONRPCClient : CommandTransportClient {
 		// terminally broken in MAGE (does not support queryId and response caching).
 		// Until this is fixed, this transport client cannot be used or completed.
 		logger.verbose("THIS TRANSPORT CLIENT IS NOT IMPLEMENTED");
-		throw(new Exception("THIS TRANSPORT CLIENT IS NOT IMPLEMENTED"));
+		throw new Exception("THIS TRANSPORT CLIENT IS NOT IMPLEMENTED");
 
 		/*
 		JSONRPCBatch rpcBatch = new JSONRPCBatch();

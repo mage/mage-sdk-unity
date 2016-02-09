@@ -91,7 +91,6 @@ public class Tome {
 			break;
 		default:
 			throw new Exception(parent.Type.ToString() + " cannot be a parent!");
-			break;
 		}
 	}
 

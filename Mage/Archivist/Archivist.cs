@@ -55,7 +55,7 @@ public class Archivist : EventEmitter<VaultValue> {
 	////////////////////////////////////////////
 
 	// Returns string id of a vault value for given topic and index
-	private string GetCacheKey (string topic, JObject index) {
+	private static string CreateCacheKey (string topic, JObject index) {
 		// Sort the keys so order of index is always the same
 		List<string> indexKeys = new List<string> ();
 		foreach (var property in index) {
@@ -78,7 +78,7 @@ public class Archivist : EventEmitter<VaultValue> {
 
 	// Returns cache value if it exists and has not passed max allowed age
 	private VaultValue GetCacheValue(string cacheKeyName, int? maxAge = null) {
-		lock ((object)this) {
+		lock ((object)_cache) {
 			if (!_cache.ContainsKey(cacheKeyName)) {
 				return null;
 			}
@@ -92,19 +92,6 @@ public class Archivist : EventEmitter<VaultValue> {
 			return value;
 		}
 	}
-	
-
-	// Ensures a cache value exists then sets it based on info provided
-	private VaultValue CreateCacheValue(string topic, JObject index) {
-		lock ((object)this) {
-			VaultValue cacheValue = new VaultValue(topic, index);
-
-			string cacheKeyName = GetCacheKey(topic, index);
-			_cache.Add(cacheKeyName, cacheValue);
-
-			return cacheValue;
-		}
-	}
 
 
 	// Return cache dictionary
@@ -114,9 +101,8 @@ public class Archivist : EventEmitter<VaultValue> {
 
 
 	// Clear out the cache entirely
-	// NOTE: we create a new instance as the Clear() function is not thread safe.
 	public void ClearCache() {
-		lock ((object)this) {
+		lock ((object)_cache) {
 			_cache.Clear();
 		}
 	}
@@ -124,14 +110,14 @@ public class Archivist : EventEmitter<VaultValue> {
 
 	// Remove a vault value from the cache by it's topic and index
 	public void DeleteCacheItem(string topic, JObject index) {
-		DeleteCacheItem(GetCacheKey(topic, index));
+		DeleteCacheItem(CreateCacheKey(topic, index));
 	}
 
 
 	// Remove a vault value from the cache by it's cache key name
 	public void DeleteCacheItem(string cacheKeyName) {
-		lock ((object)this) {
-			logger.debug("Deleteing cache item: " + cacheKeyName);
+		lock ((object)_cache) {
+			logger.debug("Deleting cache item: " + cacheKeyName);
 			if (!_cache.ContainsKey(cacheKeyName)) {
 				return;
 			}
@@ -157,47 +143,61 @@ public class Archivist : EventEmitter<VaultValue> {
 	}
 
 	private void ValueSet(string topic, JObject index, JToken data, string mediaType, int? expirationTime) {
-		// Try and get cache value. If it exists delete existing value
-		// in preparation for set. Otherwise create a new vault value.
-		string cacheKeyName = GetCacheKey(topic, index);
-		VaultValue cacheValue = GetCacheValue(cacheKeyName);
-		if (cacheValue == null) {
-			cacheValue = CreateCacheValue(topic, index);
-		} else {
-			cacheValue.Del();
-		}
+		string cacheKeyName = CreateCacheKey(topic, index);
+		VaultValue cacheValue = null;
 
-		// Set data to vault value
-		cacheValue.SetData(mediaType, data);
-		cacheValue.Touch(expirationTime);
+		// NOTE: even though some of these operations lock already, we put them inside this
+        // lock to ensure there is no time inconsistencies if things happen too fast.
+		lock ((object)_cache) {
+			cacheValue = GetCacheValue(cacheKeyName);
+			if (cacheValue == null) {
+				// If it doesn't exist, create a new vault value
+				cacheValue = new VaultValue(topic, index);
+				_cache.Add(cacheKeyName, cacheValue);
+			} else {
+				// If it exists delete existing value in preparation for set
+				cacheValue.Del();
+			}
+
+			// Set data to vault value
+			cacheValue.SetData(mediaType, data);
+			cacheValue.Touch(expirationTime);
+		}
 
 		// Emit set event
 		this.emit(topic + ":set", cacheValue);
 	}
 
 	private void ValueAdd(string topic, JObject index, JToken data, string mediaType, int? expirationTime) {
-		// Check if value already exists
-		string cacheKeyName = GetCacheKey(topic, index);
-		VaultValue cacheValue = GetCacheValue(cacheKeyName);
-		if (cacheValue != null) {
-			logger.error("Could not add value (already exists): " + cacheKeyName);
-			return;
+		string cacheKeyName = CreateCacheKey(topic, index);
+		VaultValue cacheValue = null;
+
+		// NOTE: even though some of these operations lock already, we put them inside this
+		// lock to ensure there is no time inconsistencies if things happen too fast.
+		lock ((object)_cache) {
+			// Check if value already exists
+			cacheValue = GetCacheValue(cacheKeyName);
+			if (cacheValue != null) {
+				logger.error("Could not add value (already exists): " + cacheKeyName);
+				return;
+			}
+
+			// Create new vault value
+			cacheValue = new VaultValue(topic, index);
+			_cache.Add(cacheKeyName, cacheValue);
+
+			// Set data to vault value
+			cacheValue.SetData(mediaType, data);
+			cacheValue.Touch(expirationTime);
 		}
 
-		// Create new vault value
-		cacheValue = CreateCacheValue(topic, index);
-
-		// Set data to vault value
-		cacheValue.SetData(mediaType, data);
-		cacheValue.Touch(expirationTime);
-		
 		// Emit add event
 		this.emit(topic + ":add", cacheValue);
 	}
 
 	private void ValueDel(string topic, JObject index) {
 		// Check if value already exists
-		string cacheKeyName = GetCacheKey(topic, index);
+		string cacheKeyName = CreateCacheKey(topic, index);
 		VaultValue cacheValue = GetCacheValue(cacheKeyName);
 		if (cacheValue == null) {
 			logger.error("Could not delete value (doesn't exist): " + cacheKeyName);
@@ -213,7 +213,7 @@ public class Archivist : EventEmitter<VaultValue> {
 
 	private void ValueTouch(string topic, JObject index, int? expirationTime) {
 		// Check if value already exists
-		string cacheKeyName = GetCacheKey(topic, index);
+		string cacheKeyName = CreateCacheKey(topic, index);
 		VaultValue cacheValue = GetCacheValue(cacheKeyName);
 		if (cacheValue == null) {
 			logger.error("Could not touch value (doesn't exist): " + cacheKeyName);
@@ -229,7 +229,7 @@ public class Archivist : EventEmitter<VaultValue> {
 
 	private void ValueApplyDiff(string topic, JObject index, JArray diff, int? expirationTime) {
 		// Make sure value exists
-		string cacheKeyName = GetCacheKey(topic, index);
+		string cacheKeyName = CreateCacheKey(topic, index);
 		VaultValue cacheValue = GetCacheValue(cacheKeyName);
 		if (cacheValue == null) {
 			logger.warning("Got a diff for a non-existent value:" + cacheKeyName);
@@ -306,7 +306,7 @@ public class Archivist : EventEmitter<VaultValue> {
 
 
 		// Check cache
-		string cacheKeyName = GetCacheKey(topic, index);
+		string cacheKeyName = CreateCacheKey(topic, index);
 		VaultValue cacheValue = GetCacheValue(cacheKeyName, (int?)options["maxAge"]);
 		if (cacheValue != null) {
 			cb(null, cacheValue.data);
@@ -352,7 +352,7 @@ public class Archivist : EventEmitter<VaultValue> {
 		foreach (JObject query in queries) {
 			string topic = (string)query["topic"];
 			JObject index = (JObject)query["index"];
-			string cacheKeyName = GetCacheKey(topic, index);
+			string cacheKeyName = CreateCacheKey(topic, index);
 			VaultValue cacheValue = GetCacheValue(cacheKeyName, (int?)options["maxAge"]);
 			if (cacheValue != null) {
 				responseArray.Add(cacheValue.data);
@@ -383,7 +383,7 @@ public class Archivist : EventEmitter<VaultValue> {
 					// Determine value cacheKeyName
 					string topic = (string)topicValue["key"]["topic"];
 					JObject index = (JObject)topicValue["key"]["index"];
-					string cacheKeyName = GetCacheKey(topic, index);
+					string cacheKeyName = CreateCacheKey(topic, index);
 
 					// Set value to cache
 					ValueSetOrDelete(topicValue);
@@ -418,7 +418,7 @@ public class Archivist : EventEmitter<VaultValue> {
 
 		// Check cache
 		foreach (var query in queries) {
-			string cacheKeyName = GetCacheKey(query.Value["topic"].ToString(), query.Value["index"] as JObject);
+			string cacheKeyName = CreateCacheKey(query.Value["topic"].ToString(), query.Value["index"] as JObject);
 			VaultValue cacheValue = GetCacheValue(cacheKeyName, (int?)options["maxAge"]);
 			if (cacheValue != null) {
 				responseObject.Add(query.Key, cacheValue.data);
@@ -448,7 +448,7 @@ public class Archivist : EventEmitter<VaultValue> {
 					// Determine value cacheKeyName
 					string valueTopic = topicValue["key"]["topic"].ToString();
 					JObject valueIndex = (JObject)topicValue["key"]["index"];
-					string cacheKeyName = GetCacheKey(valueTopic, valueIndex);
+					string cacheKeyName = CreateCacheKey(valueTopic, valueIndex);
 
 					// Set value to cache
 					ValueSetOrDelete(topicValue);

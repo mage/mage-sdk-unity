@@ -67,7 +67,7 @@ public class CommandCenter {
 	private void SendBatch() {
 		mage.eventManager.emit("io.send", null);
 
-		lock ((object)currentBatch) {
+		lock ((object)this) {
 			// Swap batches around locking the queue
 			sendingBatch = currentBatch;
 			currentBatch = new CommandBatch(nextQueryId++);
@@ -90,7 +90,7 @@ public class CommandCenter {
 	private void BatchComplete() {
 		mage.eventManager.emit("io.response", null);
 
-		lock ((object)currentBatch) {
+		lock ((object)this) {
 			sendingBatch = null;
 			
 			// Check if next queued batch should be sent as well
@@ -108,7 +108,7 @@ public class CommandCenter {
 
 	// Try and send a command right away if there is nothing being sent.
 	public void SendCommand(string commandName, JObject parameters, Action<Exception, JToken> cb) {
-		lock ((object)currentBatch) {
+		lock ((object)this) {
 			// Add command to queue
 			currentBatch.Queue(commandName, parameters, cb);
 
@@ -125,7 +125,7 @@ public class CommandCenter {
 	// Either send this command immediately if nothing is being sent,
 	// otherwise queue it and send it after the current send is complete.
 	public void QueueCommand(string commandName, JObject parameters, Action<Exception, JToken> cb) {
-		lock ((object)currentBatch) {
+		lock ((object)this) {
 			// If we are not sending anything, send immediately
 			if (sendingBatch == null) {
 				SendCommand(commandName, parameters, cb);
@@ -139,7 +139,7 @@ public class CommandCenter {
 
 	// Queue command to current batch and wait for it to get processed by another command
 	public void PiggyBackCommand(string commandName, JObject parameters, Action<Exception, JToken> cb) {
-		lock ((object)currentBatch) {
+		lock ((object)this) {
 			currentBatch.Queue(commandName, parameters, cb);
 		}
 	}
