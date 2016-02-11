@@ -147,7 +147,7 @@ public class Archivist : EventEmitter<VaultValue> {
 		VaultValue cacheValue = null;
 
 		// NOTE: even though some of these operations lock already, we put them inside this
-        // lock to ensure there is no time inconsistencies if things happen too fast.
+		// lock to ensure there is no time inconsistencies if things happen too fast.
 		lock ((object)_cache) {
 			cacheValue = GetCacheValue(cacheKeyName);
 			if (cacheValue == null) {
