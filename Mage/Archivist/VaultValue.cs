@@ -33,53 +33,61 @@ public class VaultValue {
 
 	// TODO: implement multiple media-types and encoding
 	public void SetData(string mediaType, JToken data) {
-		// Detect media type
-		_mediaType = mediaType;
+		lock ((object)this) {
+			// Detect media type
+			_mediaType = mediaType;
 
-		// Set data based on media type
-		_data = Tome.Conjure(JToken.Parse((string)data));
+			// Set data based on media type
+			_data = Tome.Conjure(JToken.Parse ((string)data));
 
-		// Bump the last written time
-		_writtenAt = DateTime.Now;
+			// Bump the last written time
+			_writtenAt = DateTime.Now;
+		}
 	}
 
 
 	//
 	public void Del() {
-		// Bump the last written time and check if we have data to destroy
-		_writtenAt = DateTime.Now;
-		if (_data == null) {
-			return;
+		lock ((object)this) {
+			// Bump the last written time and check if we have data to destroy
+			_writtenAt = DateTime.Now;
+			if (_data == null) {
+				return;
+			}
+
+			// Cleanup data
+			Tome.Destroy(_data);
+			_data = null;
+			_mediaType = null;
+
+			// Clear expiration time
+			Touch (null);
 		}
-
-		// Cleanup data
-		Tome.Destroy(_data);
-		_data = null;
-		_mediaType = null;
-
-		// Clear expiration time
-		Touch(null);
 	}
 
 
 	// TODO: the actual implementation of this requires the MAGE time module,
 	// also we have a timer to clear the value once expired.
 	public void Touch(int? expirationTime) {
-		_expirationTime = expirationTime;
+		lock ((object)this) {
+			_expirationTime = expirationTime;
+		}
 	}
 
 
 	//
 	public void ApplyDiff(JArray diff) {
-		if (diff == null || _data == null) {
-			return;
+		lock ((object)this) {
+			if (diff == null || _data == null) {
+				return;
+			}
+
+			// Apply diff to data
+			Tome.ApplyDiff(_data, diff);
+
+			// Bump the last written time
+			_writtenAt = DateTime.Now;
 		}
-
-		// Apply diff to data
-		Tome.ApplyDiff(_data, diff);
-
-		// Bump the last written time
-		_writtenAt = DateTime.Now;
 	}
 }
  

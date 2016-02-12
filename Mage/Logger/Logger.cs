@@ -1,7 +1,45 @@
-﻿
+﻿using System;
+using System.Collections.Generic;
+
+
 public class Logger {
 	//
 	public static EventEmitter<LogEntry> logEmitter = new EventEmitter<LogEntry>();
+
+	//
+	public static Dictionary<string, LogWriter> logWriters;
+	public static void SetConfig(Dictionary<string, List<string>> config) {
+		// Destroy existing log writers
+		if (logWriters != null) {
+			foreach (var writer in logWriters.Values) {
+				writer.Dispose();
+			}
+			logWriters = null;
+		}
+
+		// Make sure we have configured something
+		if (config == null) {
+			return;
+		}
+
+		// Create each writer with log levels
+		logWriters = new Dictionary<string, LogWriter>();
+		foreach (var property in config) {
+			string writer = property.Key;
+			List<string> writerConfig = property.Value;
+
+			switch (writer) {
+			case "console":
+				logWriters.Add(writer, new ConsoleWriter(writerConfig) as LogWriter);
+				break;
+			case "server":
+				logWriters.Add(writer, new ServerWriter(writerConfig) as LogWriter);
+				break;
+			default:
+				throw new Exception("Unknown Log Writer: " + writer);
+			}
+		}
+	}
 
 
 	//

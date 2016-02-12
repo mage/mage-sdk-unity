@@ -102,14 +102,27 @@ public class LongPolling : TransportClient {
 			}
 
 			if (requestError != null) {
-				logger.error(requestError.ToString());
+				if (requestError is WebException) {
+					// Only log web exceptions if they aren't an empty response or gateway timeout
+					WebException webException = requestError as WebException;
+					HttpWebResponse webResponse = webException.Response as HttpWebResponse;
+					if (
+						webException.Status != WebExceptionStatus.ReceiveFailure &&
+						(webResponse == null || webResponse.StatusCode != HttpStatusCode.GatewayTimeout)
+					) {
+						logger.error(requestError.ToString());
+					}
+				} else {
+					logger.error(requestError.ToString());
+				}
+
 				queueNextRequest(_errorInterval);
 				return;
 			}
 
 			// Call the message processer hook and re-call request loop function
 			try {
-				logger.debug("Recieved response: " + responseString);
+				logger.verbose("Recieved response: " + responseString);
 				if (responseString != null) {
 					_processMessages(responseString);
 				}

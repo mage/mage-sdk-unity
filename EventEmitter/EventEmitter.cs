@@ -20,7 +20,8 @@ public class EventEmitter<T> {
 	//
 	public void once(string eventTag, Action<object, T> handler)
 	{
-		Action<object, T> handlerWrapper = (object obj, T arguments) => {
+		Action<object, T> handlerWrapper;
+		handlerWrapper = (object obj, T arguments) => {
 			eventsList.RemoveHandler(eventTags[eventTag], handlerWrapper);
 			handler(obj, arguments);
 		};
@@ -42,5 +43,22 @@ public class EventEmitter<T> {
 	public void emit(string eventTag, T arguments)
 	{
 		emit(eventTag, null, arguments);
+	}
+
+	//
+	public void off(string eventTag, Action<object, T> handler)
+	{
+		eventsList.RemoveHandler(eventTags[eventTag], handler);
+	}
+
+	//
+	public void removeAllListeners()
+	{
+		// Destroy all event handlers
+		eventsList.Dispose();
+		eventsList = new EventHandlerList();
+
+		// Destroy all event tags
+		eventTags = new Dictionary<string, object>();
 	}
 }

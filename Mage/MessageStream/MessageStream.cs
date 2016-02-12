@@ -65,7 +65,7 @@ public class MessageStream {
 		#endif
 
 		// Set the selected transport client (or the default)
-		this.setTransport (transport);
+		this.SetTransport(transport);
 	}
 
 
@@ -82,7 +82,7 @@ public class MessageStream {
 
 
 	// Updates URI and credentials 
-	public void setEndpoint(string baseURL, string username = null, string password = null) {
+	public void SetEndpoint(string baseURL, string username = null, string password = null) {
 		_endpoint = baseURL + "/msgstream";
 		_username = username;
 		_password = password;
@@ -90,7 +90,7 @@ public class MessageStream {
 
 
 	// Sets up given transport client type
-	public void setTransport(TransportType transport) {
+	public void SetTransport(TransportType transport) {
 		// Stop existing transport client if any, when nulled out it will be collected
 		// by garbage collecter after existing connections have been terminated.
 		if (transportClient != null) {

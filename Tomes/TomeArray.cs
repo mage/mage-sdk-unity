@@ -48,250 +48,287 @@ public class TomeArray : JArray {
 
 	//
 	public void Assign(JToken newValue) {
-		switch (newValue.Type) {
-		case JTokenType.Array:
-			TomeArray newTomeArray = new TomeArray((JArray)newValue, root);
-			this.Replace(newTomeArray);
+		lock((object)this) {
+			switch (newValue.Type) {
+			case JTokenType.Array:
+				TomeArray newTomeArray = new TomeArray((JArray)newValue, root);
+				this.Replace(newTomeArray);
 
-			if (this.Parent == null) {
-				// If replace was successfuly move over event handlers and call new onChanged handler
-				// The instance in which replace would not be successful, is when the old and new values are the same
-				onChanged -= EmitToParents;
-				onChanged += newTomeArray.onChanged;
-				newTomeArray.onChanged = onChanged;
-				newTomeArray.onDestroy = onDestroy;
-				onAdd -= EmitChanged;
-				onAdd += newTomeArray.onAdd;
-				newTomeArray.onAdd = onAdd;
-				onDel -= EmitChanged;
-				onDel += newTomeArray.onDel;
-				newTomeArray.onDel = onDel;
+				if (this.Parent == null) {
+					// If replace was successfuly move over event handlers and call new onChanged handler
+					// The instance in which replace would not be successful, is when the old and new values are the same
+					onChanged -= EmitToParents;
+					onChanged += newTomeArray.onChanged;
+					newTomeArray.onChanged = onChanged;
+					newTomeArray.onDestroy = onDestroy;
+					onAdd -= EmitChanged;
+					onAdd += newTomeArray.onAdd;
+					newTomeArray.onAdd = onAdd;
+					onDel -= EmitChanged;
+					onDel += newTomeArray.onDel;
+					newTomeArray.onDel = onDel;
 
-				if (newTomeArray.onChanged != null) {
-					newTomeArray.onChanged.Invoke(null);
+					if (newTomeArray.onChanged != null) {
+						newTomeArray.onChanged.Invoke(null);
+					}
+				} else {
+					// Otherwise call original onChanged handler
+					if (onChanged != null) {
+						onChanged.Invoke(null);
+					}
 				}
-			} else {
-				// Otherwise call original onChanged handler
-				if (onChanged != null) {
-					onChanged.Invoke(null);
+				break;
+			case JTokenType.Object:
+				TomeObject newTomeObject = new TomeObject((JObject)newValue, root);
+				this.Replace(newTomeObject);
+
+				if (this.Parent == null) {
+					// If replace was successfuly move over event handlers and call new onChanged handler
+					// The instance in which replace would not be successful, is when the old and new values are the same
+					onChanged -= EmitToParents;
+					onChanged += newTomeObject.onChanged;
+					newTomeObject.onChanged = onChanged;
+					newTomeObject.onDestroy = onDestroy;
+					onAdd -= EmitChanged;
+					onAdd += newTomeObject.onAdd;
+					newTomeObject.onAdd = onAdd;
+					onDel -= EmitChanged;
+					onDel += newTomeObject.onDel;
+					newTomeObject.onDel = onDel;
+
+					if (newTomeObject.onChanged != null) {
+						newTomeObject.onChanged.Invoke(null);
+					}
+				} else {
+					// Otherwise call original onChanged handler
+					if (onChanged != null) {
+						onChanged.Invoke(null);
+					}
 				}
+				break;
+			default:
+				TomeValue newTomeValue = new TomeValue((JValue)newValue, root);
+				this.Replace(newTomeValue);
+
+				if (this.Parent == null) {
+					// If replace was successfuly move over event handlers and call new onChanged handler
+					// The instance in which replace would not be successful, is when the old and new values are the same
+					onChanged -= EmitToParents;
+					onChanged += newTomeValue.onChanged;
+					newTomeValue.onChanged = onChanged;
+					newTomeValue.onDestroy = onDestroy;
+
+					if (newTomeValue.onChanged != null) {
+						newTomeValue.onChanged.Invoke(null);
+					}
+				} else {
+					// Otherwise call original onChanged handler
+					if (onChanged != null) {
+						onChanged.Invoke(null);
+					}
+				}
+				break;
 			}
-			break;
-		case JTokenType.Object:
-			TomeObject newTomeObject = new TomeObject((JObject)newValue, root);
-			this.Replace(newTomeObject);
-
-			if (this.Parent == null) {
-				// If replace was successfuly move over event handlers and call new onChanged handler
-				// The instance in which replace would not be successful, is when the old and new values are the same
-				onChanged -= EmitToParents;
-				onChanged += newTomeObject.onChanged;
-				newTomeObject.onChanged = onChanged;
-				newTomeObject.onDestroy = onDestroy;
-				onAdd -= EmitChanged;
-				onAdd += newTomeObject.onAdd;
-				newTomeObject.onAdd = onAdd;
-				onDel -= EmitChanged;
-				onDel += newTomeObject.onDel;
-				newTomeObject.onDel = onDel;
-
-				if (newTomeObject.onChanged != null) {
-					newTomeObject.onChanged.Invoke(null);
-				}
-			} else {
-				// Otherwise call original onChanged handler
-				if (onChanged != null) {
-					onChanged.Invoke(null);
-				}
-			}
-			break;
-		default:
-			TomeValue newTomeValue = new TomeValue((JValue)newValue, root);
-			this.Replace(newTomeValue);
-
-			if (this.Parent == null) {
-				// If replace was successfuly move over event handlers and call new onChanged handler
-				// The instance in which replace would not be successful, is when the old and new values are the same
-				onChanged -= EmitToParents;
-				onChanged += newTomeValue.onChanged;
-				newTomeValue.onChanged = onChanged;
-				newTomeValue.onDestroy = onDestroy;
-
-				if (newTomeValue.onChanged != null) {
-					newTomeValue.onChanged.Invoke(null);
-				}
-			} else {
-				// Otherwise call original onChanged handler
-				if (onChanged != null) {
-					onChanged.Invoke(null);
-				}
-			}
-			break;
 		}
 	}
 	
 	//
 	public void Destroy() {
-		if (onDestroy != null) {
-			onDestroy.Invoke();
+		lock((object)this) {
+			foreach (JToken value in this) {
+				Tome.Destroy(value);
+			}
+
+			if (onDestroy != null) {
+				onDestroy.Invoke();
+			}
+
+			onChanged = null;
+			onDestroy = null;
+			onAdd = null;
+			onDel = null;
 		}
 	}
 	
 	//
 	public void Set(int index, JToken value) {
-		// Make sure the property exists, filling in missing indexes
-		if (this.Count <= index) {
-			while (this.Count < index) {
-				this.Add(Tome.Conjure(JValue.CreateNull(), root));
+		lock((object)this) {
+			// Make sure the property exists, filling in missing indexes
+			if (this.Count <= index) {
+				while (this.Count < index) {
+					this.Add(Tome.Conjure(JValue.CreateNull(), root));
+				}
+
+				this.Add(Tome.Conjure(value, root));
+				if (onAdd != null) {
+					onAdd.Invoke(index);
+				}
+				return;
 			}
 
-			this.Add(Tome.Conjure(value, root));
-			if (onAdd != null) {
-				onAdd.Invoke(index);
+			// Assign the property
+			JToken property = this[index];
+			switch (property.Type) {
+			case JTokenType.Array:
+				(property as TomeArray).Assign(value);
+				break;
+			case JTokenType.Object:
+				(property as TomeObject).Assign(value);
+				break;
+			default:
+				if ((property as TomeValue) == null) {
+					Mage.Instance.logger("Tomes").data(property).error("property is not a tome value: " + index.ToString());
+					UnityEngine.Debug.Log(this);
+				}
+				(property as TomeValue).Assign(value);
+				break;
 			}
-			return;
-		}
-
-		// Assign the property
-		JToken property = this[index];
-		switch (property.Type) {
-		case JTokenType.Array:
-			(property as TomeArray).Assign(value);
-			break;
-		case JTokenType.Object:
-			(property as TomeObject).Assign(value);
-			break;
-		default:
-			if ((property as TomeValue) == null) {
-				Mage.Instance.logger("Tomes").data(property).error("item is not a tome value:");
-			}
-			(property as TomeValue).Assign(value);
-			break;
 		}
 	}
 	
 	//
 	public void Del(int index) {
-		JToken item = this[index];
-		switch (item.Type) {
-		case JTokenType.Array:
-			(item as TomeArray).Destroy();
-			break;
-		case JTokenType.Object:
-			(item as TomeObject).Destroy();
-			break;
-		default:
-			if ((item as TomeValue) == null) {
-				Mage.Instance.logger("Tomes").data(item).error("item is not a tome value:");
+		lock((object)this) {
+			JToken property = this[index];
+			switch (property.Type) {
+			case JTokenType.Array:
+				(property as TomeArray).Destroy();
+				break;
+			case JTokenType.Object:
+				(property as TomeObject).Destroy();
+				break;
+			default:
+				if ((property as TomeValue) == null) {
+					Mage.Instance.logger("Tomes").data(property).error("property is not a tome value:" + index.ToString());
+					UnityEngine.Debug.Log(this);
+				}
+				(property as TomeValue).Destroy();
+				break;
 			}
-			(item as TomeValue).Destroy();
-			break;
-		}
 
-		this[index].Replace(JValue.CreateNull());
-		if (onDel != null) {
-			onDel.Invoke(index);
+			this[index].Replace(JValue.CreateNull());
+			if (onDel != null) {
+				onDel.Invoke(index);
+			}
 		}
 	}
 	
 	//
 	public void Move(int fromKey, JToken newParent, JToken newKey) {
-		if (newParent.Type == JTokenType.Array) {
-			(newParent as TomeArray).Set((int)newKey, this[fromKey]);
-		} else {
-			(newParent as TomeObject).Set((string)newKey, this[fromKey]);
+		lock((object)this) {
+			if (newParent.Type == JTokenType.Array) {
+				(newParent as TomeArray).Set((int)newKey, this[fromKey]);
+			} else {
+				(newParent as TomeObject).Set((string)newKey, this[fromKey]);
+			}
+			
+			Del(fromKey);
 		}
-		
-		Del(fromKey);
 	}
 	
 	//
 	public void Rename(int wasKey, int isKey) {
-		JToken wasValue = this[wasKey];
-		Del(wasKey);
-		Set(isKey, wasValue);
+		lock((object)this) {
+			JToken wasValue = this[wasKey];
+			Del(wasKey);
+			Set(isKey, wasValue);
+		}
 	}
 	
 	//
 	public void Swap(int firstKey, JToken secondParent, JToken secondKey) {
-		JToken secondValue;
-		if (secondParent.Type == JTokenType.Array) {
-			secondValue = secondParent[(int)secondKey];
-			secondParent[(int)secondKey].Replace(this[firstKey]);
-		} else {
-			secondValue = secondParent[(string)secondKey];
-			secondParent[(string)secondKey].Replace(this[firstKey]);
-		}
-		
-		this[firstKey].Replace(secondValue);
-		if (onChanged != null) {
-			onChanged.Invoke(null);
+		lock((object)this) {
+			JToken secondValue;
+			if (secondParent.Type == JTokenType.Array) {
+				secondValue = secondParent[(int)secondKey];
+				secondParent[(int)secondKey].Replace(this[firstKey]);
+			} else {
+				secondValue = secondParent[(string)secondKey];
+				secondParent[(string)secondKey].Replace(this[firstKey]);
+			}
+			
+			this[firstKey].Replace(secondValue);
+			if (onChanged != null) {
+				onChanged.Invoke(null);
+			}
 		}
 	}
 
 	//
 	public void Push(JToken item) {
-		this.Set(this.Count, item);
+		lock((object)this) {
+			this.Set(this.Count, item);
+		}
 	}
 
 	// NOTE: Tome behavior for a del operation is to replace values with null.
 	// However a pop operation does in fact remove the item as well as
 	// firing the del event. Thus we do both below.
 	public JToken Pop() {
-		JToken last = this[this.Count - 1];
-		this.Del(this.Count - 1);
-		this.Last.Remove();
-		return last;
+		lock((object)this) {
+			JToken last = this[this.Count - 1];
+			this.Del(this.Count - 1);
+			this.Last.Remove();
+			return last;
+		}
 	}
 
 	// NOTE: Tome behavior for a del operation is to replace values with null.
 	// However a shift operation does in fact remove the item as well as
 	// firing the del event. Thus we do both below.
 	public JToken Shift() {
-		JToken first = this[0];
-		this.Del(0);
-		this.First.Remove();
-		return first;
+		lock((object)this) {
+			JToken first = this[0];
+			this.Del(0);
+			this.First.Remove();
+			return first;
+		}
 	}
 
 	//
 	public void UnShift(JToken item) {
-		this.AddFirst(Tome.Conjure(item, root));
-		if (onAdd != null) {
-			onAdd.Invoke(0);
+		lock((object)this) {
+			this.AddFirst(Tome.Conjure(item, root));
+			if (onAdd != null) {
+				onAdd.Invoke(0);
+			}
 		}
 	}
 
 	//
 	public void Reverse() {
-		JArray oldOrder = new JArray(this as JArray);
-		for (int i = oldOrder.Count; i > 0; i -= 1) {
-			this[oldOrder.Count - i].Replace(oldOrder[i - 1]);
-		}
+		lock((object)this) {
+			JArray oldOrder = new JArray(this as JArray);
+			for (int i = oldOrder.Count; i > 0; i -= 1) {
+				this[oldOrder.Count - i].Replace(oldOrder[i - 1]);
+			}
 
-		if (onChanged != null) {
-			onChanged.Invoke(null);
+			if (onChanged != null) {
+				onChanged.Invoke(null);
+			}
 		}
 	}
 
 	//
 	public void Splice(int index, int deleteCount, JArray insertItems) {
-		// Delete given item count starting at given index
-		for (int delI = index + deleteCount - 1; delI >= index; delI -= 1) {
-			if (delI > this.Count - 1) {
-				continue;
+		lock((object)this) {
+			// Delete given item count starting at given index
+			for (int delI = index + deleteCount - 1; delI >= index; delI -= 1) {
+				if (delI > this.Count - 1) {
+					continue;
+				}
+
+				Del(delI);
+				this[delI].Remove();
 			}
 
-			Del(delI);
-			this[delI].Remove();
-		}
-
-		// Insert given items starting at given index
-		for (int addI = 0; addI < insertItems.Count; addI += 1) {
-			int insertI = index + addI;
-			this.Insert(insertI, Tome.Conjure(insertItems[addI]));
-			if (onAdd != null) {
-				onAdd.Invoke(insertI);
+			// Insert given items starting at given index
+			for (int addI = 0; addI < insertItems.Count; addI += 1) {
+				int insertI = index + addI;
+				this.Insert(insertI, Tome.Conjure(insertItems[addI]));
+				if (onAdd != null) {
+					onAdd.Invoke(insertI);
+				}
 			}
 		}
 	}
@@ -299,92 +336,96 @@ public class TomeArray : JArray {
 
 	// We implement this as when using JArray.IndexOf(JToken) it compares the reference but not the value.
 	public int IndexOf(string lookFor) {
-		for (int i = 0; i < this.Count; i += 1) {
-			JToken value = this[i];
-			if (value.Type == JTokenType.String && (string)value == lookFor) {
-				return i;
+		lock((object)this) {
+			for (int i = 0; i < this.Count; i += 1) {
+				JToken value = this[i];
+				if (value.Type == JTokenType.String && (string)value == lookFor) {
+					return i;
+				}
 			}
-		}
 
-		return -1;
+			return -1;
+		}
 	}
 
 
 	//
 	public void ApplyOperation(string op, JToken val, JToken root) {
-		switch (op) {
-		case "assign":
-			Assign(val);
-			break;
+		lock((object)this) {
+			switch (op) {
+			case "assign":
+				Assign(val);
+				break;
 
-		case "set":
-			Set((int)val["key"], val["val"]);
-			break;
+			case "set":
+				Set((int)val["key"], val["val"]);
+				break;
 
-		case "del":
-			Del((int)val);
-			break;
+			case "del":
+				Del((int)val);
+				break;
 
-		case "move":
-			int fromKey = (int)val["key"];
-			JToken newParent = Tome.PathValue(root, val["newParent"] as JArray);
-			JToken toKey = (val["newKey"] != null) ? val["newKey"] : new JValue(fromKey);
-			Move(fromKey, newParent, toKey);
-			break;
+			case "move":
+				int fromKey = (int)val["key"];
+				JToken newParent = Tome.PathValue(root, val["newParent"] as JArray);
+				JToken toKey = (val["newKey"] != null) ? val["newKey"] : new JValue(fromKey);
+				Move(fromKey, newParent, toKey);
+				break;
 
-		case "rename":
-			foreach (var property in val as JObject) {
-				int wasKey = int.Parse(property.Key);
-				int isKey = (int)property.Value;
-				Rename(wasKey, isKey);
+			case "rename":
+				foreach (var property in val as JObject) {
+					int wasKey = int.Parse(property.Key);
+					int isKey = (int)property.Value;
+					Rename(wasKey, isKey);
+				}
+				break;
+
+			case "swap":
+				int firstKey = (int)val["key"];
+				JToken secondParent = Tome.PathValue(root, val["newParent"] as JArray);
+				JToken secondKey = (val["newKey"] != null) ? val["newKey"] : new JValue(firstKey);
+				Swap(firstKey, secondParent, secondKey);
+				break;
+
+			case "push":
+				foreach (JToken item in val as JArray) {
+					Push(item);
+				}
+				break;
+
+			case "pop":
+				Pop();
+				break;
+
+			case "shift":
+				Shift();
+				break;
+
+			case "unshift":
+				JArray unshiftItems = val as JArray;
+				for (int i = unshiftItems.Count; i > 0; i -= 1) {
+					UnShift(unshiftItems[i - 1]);
+				}
+				break;
+
+			case "reverse":
+				Reverse();
+				break;
+
+			case "splice":
+				int index = (int)val[0];
+				int deleteCount = (int)val[1];
+
+				JArray items = new JArray(val as JArray);
+				items.First.Remove();
+				items.First.Remove();
+
+				Splice(index, deleteCount, items);
+				break;
+
+			default:
+				throw new Exception("TomeArray - Unsupported operation: " + op);
 			}
-			break;
-
-		case "swap":
-			int firstKey = (int)val["key"];
-			JToken secondParent = Tome.PathValue(root, val["newParent"] as JArray);
-			JToken secondKey = (val["newKey"] != null) ? val["newKey"] : new JValue(firstKey);
-			Swap(firstKey, secondParent, secondKey);
-			break;
-
-		case "push":
-			foreach (JToken item in val as JArray) {
-				Push(item);
-			}
-			break;
-
-		case "pop":
-			Pop();
-			break;
-
-		case "shift":
-			Shift();
-			break;
-
-		case "unshift":
-			JArray unshiftItems = val as JArray;
-			for (int i = unshiftItems.Count; i > 0; i -= 1) {
-				UnShift(unshiftItems[i - 1]);
-			}
-			break;
-
-		case "reverse":
-			Reverse();
-			break;
-
-		case "splice":
-			int index = (int)val[0];
-			int deleteCount = (int)val[1];
-
-			JArray items = new JArray(val as JArray);
-			items.First.Remove();
-			items.First.Remove();
-
-			Splice(index, deleteCount, items);
-			break;
-
-		default:
-			throw new Exception("TomeArray - Unsupported operation: " + op);
 		}
 	}
 }
