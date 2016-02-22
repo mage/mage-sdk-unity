@@ -102,7 +102,7 @@ public class CommandCenter {
 	
 	//
 	private void TransportError(string errorType, Exception error) {
-		logger.data(error).error("Error when sending command batch request");
+		logger.data(error).error("Error when sending command batch request '" + errorType + "'");
 		mage.eventManager.emit("io.error." + errorType, null);
 	}
 

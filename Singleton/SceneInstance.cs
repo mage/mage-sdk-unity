@@ -6,12 +6,12 @@ public class SceneInstance<T> : MonoBehaviour where T : class, new() {
 	public static T Instance { get { return _Instance; } }
 
 	// Use this for initialization before any start methods are called
-	protected void Awake () {
+	protected virtual void Awake () {
 		_Instance = (T)(object)this;
 	}
 
 	// Use this for destruction
-	protected void OnDestroy() {
+	protected virtual void OnDestroy() {
 		_Instance = null;
 	}
 }
