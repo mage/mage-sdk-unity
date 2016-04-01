@@ -82,6 +82,10 @@ public class Mage : Singleton<Mage> {
 		}
 
 
+		// Instantiate HTTPRequestManager
+		HTTPRequestManager.Instantiate();
+
+
 		// Create a shared cookie container
 		cookies = new CookieContainer();
 
@@ -174,7 +178,7 @@ public class Mage : Singleton<Mage> {
 	//
 	public IEnumerator SetupTask(Action<Exception> cb) {
 		// Execute async setup function
-		MageSetupStatus setupStatus = new MageSetupStatus ();
+		MageSetupStatus setupStatus = new MageSetupStatus();
 		Setup((Exception error) => {
 			setupStatus.error = error;
 			setupStatus.done = true;

@@ -1,4 +1,7 @@
-﻿using System;
+﻿// THIS SHOULD BE REFACTORED AND USED FOR PURE C# .NET CLIENTS
+#if FALSE
+
+using System;
 using System.Collections.Generic;
 using System.Net;
 using System.IO;
@@ -118,3 +121,4 @@ public class HTTPRequest {
 		}), null);
 	}
 }
+#endif
