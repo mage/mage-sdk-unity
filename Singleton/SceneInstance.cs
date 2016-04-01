@@ -1,6 +1,6 @@
 ﻿using UnityEngine;
 
-public class SceneInstance<T> : MonoBehaviour where T : class, new() {
+public class SceneInstance<T> : MonoBehaviour where T : class {
 	//
 	protected static T _Instance = null;
 	public static T Instance { get { return _Instance; } }
