@@ -84,7 +84,7 @@ public class Archivist : EventEmitter<VaultValue> {
 			}
 
 			VaultValue value = _cache[cacheKeyName];
-			double timespan = (DateTime.Now - value.writtenAt).TotalMilliseconds;
+			double timespan = (DateTime.UtcNow - value.writtenAt).TotalMilliseconds;
 			if (maxAge != null && timespan > maxAge * 1000) {
 				return null;
 			}
@@ -200,7 +200,7 @@ public class Archivist : EventEmitter<VaultValue> {
 		string cacheKeyName = CreateCacheKey(topic, index);
 		VaultValue cacheValue = GetCacheValue(cacheKeyName);
 		if (cacheValue == null) {
-			logger.error("Could not delete value (doesn't exist): " + cacheKeyName);
+			logger.warning("Could not delete value (doesn't exist): " + cacheKeyName);
 			return;
 		}
 		
@@ -216,7 +216,7 @@ public class Archivist : EventEmitter<VaultValue> {
 		string cacheKeyName = CreateCacheKey(topic, index);
 		VaultValue cacheValue = GetCacheValue(cacheKeyName);
 		if (cacheValue == null) {
-			logger.error("Could not touch value (doesn't exist): " + cacheKeyName);
+			logger.warning("Could not touch value (doesn't exist): " + cacheKeyName);
 			return;
 		}
 

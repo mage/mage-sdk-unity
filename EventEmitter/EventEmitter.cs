@@ -20,7 +20,7 @@ public class EventEmitter<T> {
 	//
 	public void once(string eventTag, Action<object, T> handler)
 	{
-		Action<object, T> handlerWrapper;
+		Action<object, T> handlerWrapper = null;
 		handlerWrapper = (object obj, T arguments) => {
 			eventsList.RemoveHandler(eventTags[eventTag], handlerWrapper);
 			handler(obj, arguments);

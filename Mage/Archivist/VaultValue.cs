@@ -41,7 +41,7 @@ public class VaultValue {
 			_data = Tome.Conjure(JToken.Parse ((string)data));
 
 			// Bump the last written time
-			_writtenAt = DateTime.Now;
+			_writtenAt = DateTime.UtcNow;
 		}
 	}
 
@@ -50,7 +50,7 @@ public class VaultValue {
 	public void Del() {
 		lock ((object)this) {
 			// Bump the last written time and check if we have data to destroy
-			_writtenAt = DateTime.Now;
+			_writtenAt = DateTime.UtcNow;
 			if (_data == null) {
 				return;
 			}
@@ -86,7 +86,7 @@ public class VaultValue {
 			Tome.ApplyDiff(_data, diff);
 
 			// Bump the last written time
-			_writtenAt = DateTime.Now;
+			_writtenAt = DateTime.UtcNow;
 		}
 	}
 }
