@@ -9,12 +9,12 @@ namespace Wizcorp.MageSDK.MageClient.Message.Client
 {
 	public class ShortPolling : TransportClient
 	{
-		private Mage Mage
+		private static Mage Mage
 		{
 			get { return Mage.Instance; }
 		}
 
-		private Logger Logger
+		private static Logger Logger
 		{
 			get { return Mage.Logger("shortpolling"); }
 		}
@@ -109,30 +109,26 @@ namespace Wizcorp.MageSDK.MageClient.Message.Client
 			// Send poll request and wait for a response
 			string endpoint = getEndpoint();
 			Logger.Debug("Sending request: " + endpoint);
-			HttpRequest.Get(
-				endpoint,
-				getHeaders(),
-				Mage.Cookies,
-				(requestError, responseString) => {
-					if (requestError != null)
-					{
-						Logger.Error(requestError.ToString());
-						QueueNextRequest(errorInterval);
-						return;
-					}
+			HttpRequest.Get(endpoint, getHeaders(), Mage.Cookies, (requestError, responseString) => {
+				if (requestError != null)
+				{
+					Logger.Error(requestError.ToString());
+					QueueNextRequest(errorInterval);
+					return;
+				}
 
-					// Call the message processer hook and queue the next request
-					try
-					{
-						processMessages(responseString);
-						QueueNextRequest(requestInterval);
-					}
-					catch (Exception error)
-					{
-						Logger.Data(responseString).Error(error.ToString());
-						QueueNextRequest(errorInterval);
-					}
-				});
+				// Call the message processer hook and queue the next request
+				try
+				{
+					processMessages(responseString);
+					QueueNextRequest(requestInterval);
+				}
+				catch (Exception error)
+				{
+					Logger.Data(responseString).Error(error.ToString());
+					QueueNextRequest(errorInterval);
+				}
+			});
 		}
 	}
 }

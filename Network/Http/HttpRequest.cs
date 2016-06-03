@@ -95,14 +95,10 @@ namespace Wizcorp.MageSDK.Network.Http
 		// Abort request
 		public void Abort()
 		{
-			using (WWW _request = request) {
-				request = null;
+			WWW webRequest = request;
+			request = null;
 
-				if (_request != null)
-				{
-					_request.Dispose();
-				}
-			}
+			webRequest.Dispose();
 			timeoutTimer.Stop();
 		}
 

@@ -1,7 +1,8 @@
-﻿namespace Wizcorp.MageSDK.Utils
+﻿using System;
+
+namespace Wizcorp.MageSDK.Utils
 {
-	public class Singleton<T>
-		where T : class, new()
+	public class Singleton<T> where T : class, new()
 	{
 		public static T Instance
 		{
@@ -14,7 +15,14 @@
 		// Hack which makes sure the _instance property is set during the T class constructor
 		protected Singleton()
 		{
-			instance = (T)(object)this;
+			try
+			{
+				instance = (T)(object)this;
+			}
+			catch (InvalidCastException e)
+			{
+				UnityEngine.Debug.LogError(e);
+			}
 		}
 	}
 }

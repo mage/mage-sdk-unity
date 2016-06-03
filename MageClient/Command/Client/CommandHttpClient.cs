@@ -70,48 +70,45 @@ namespace Wizcorp.MageSDK.Command.Client
 			string postData = string.Join("\n", data.ToArray());
 
 			// Send HTTP request
-			SendRequest(
-				batchUrl,
-				postData,
-				responseArray => {
-					// Process each command response
-					try
+			SendRequest(batchUrl, postData, responseArray => {
+				// Process each command response
+				try
+				{
+					for (var batchId = 0; batchId < responseArray.Count; batchId += 1)
 					{
-						for (var batchId = 0; batchId < responseArray.Count; batchId += 1)
+						var commandResponse = responseArray[batchId] as JArray;
+						CommandBatchItem commandItem = commandBatch.BatchItems[batchId];
+						string commandName = commandItem.CommandName;
+						Action<Exception, JToken> commandCb = commandItem.Cb;
+
+						// Check if there are any events attached to this request
+						if (commandResponse != null && commandResponse.Count >= 3)
 						{
-							var commandResponse = responseArray[batchId] as JArray;
-							CommandBatchItem commandItem = commandBatch.BatchItems[batchId];
-							string commandName = commandItem.CommandName;
-							Action<Exception, JToken> commandCb = commandItem.Cb;
+							Logger.Verbose("[" + commandName + "] processing events");
+							Mage.EventManager.EmitEventList((JArray)commandResponse[2]);
+						}
 
-							// Check if there are any events attached to this request
-							if (commandResponse != null && commandResponse.Count >= 3)
-							{
-								Logger.Verbose("[" + commandName + "] processing events");
-								Mage.EventManager.EmitEventList((JArray)commandResponse[2]);
-							}
+						// Check if the response was an error
+						if (commandResponse != null && commandResponse[0].Type != JTokenType.Null)
+						{
+							Logger.Verbose("[" + commandName + "] server error");
+							commandCb(new Exception(commandResponse[0].ToString()), null);
+							return;
+						}
 
-							// Check if the response was an error
-							if (commandResponse != null && commandResponse[0].Type != JTokenType.Null)
-							{
-								Logger.Verbose("[" + commandName + "] server error");
-								commandCb(new Exception(commandResponse[0].ToString()), null);
-								return;
-							}
-
-							// Pull off call result object, if it doesn't exist
-							Logger.Verbose("[" + commandName + "] call response");
-							if (commandResponse != null)
-							{
-								commandCb(null, commandResponse[1]);
-							}
+						// Pull off call result object, if it doesn't exist
+						Logger.Verbose("[" + commandName + "] call response");
+						if (commandResponse != null)
+						{
+							commandCb(null, commandResponse[1]);
 						}
 					}
-					catch (Exception error)
-					{
-						Logger.Data(error).Error("Error when processing command batch responses");
-					}
-				});
+				}
+				catch (Exception error)
+				{
+					Logger.Data(error).Error("Error when processing command batch responses");
+				}
+			});
 		}
 
 		private void SendRequest(string batchUrl, string postData, Action<JArray> cb)
@@ -124,51 +121,45 @@ namespace Wizcorp.MageSDK.Command.Client
 				headers.Add("Authorization", "Basic " + encodedAuth);
 			}
 
-			HttpRequest.Post(
-				batchUrl,
-				"",
-				postData,
-				headers,
-				Mage.Cookies,
-				(requestError, responseString) => {
-					Logger.Verbose("Recieved response: " + responseString);
+			HttpRequest.Post(batchUrl, "", postData, headers, Mage.Cookies, (requestError, responseString) => {
+				Logger.Verbose("Recieved response: " + responseString);
 
-					// Check if there was a transport error
-					if (requestError != null)
+				// Check if there was a transport error
+				if (requestError != null)
+				{
+					var error = "network";
+					if (requestError is WebException)
 					{
-						var error = "network";
-						if (requestError is WebException)
+						var webException = requestError as WebException;
+						var webResponse = webException.Response as HttpWebResponse;
+						if (webResponse != null && webResponse.StatusCode == HttpStatusCode.ServiceUnavailable)
 						{
-							var webException = requestError as WebException;
-							var webResponse = webException.Response as HttpWebResponse;
-							if (webResponse != null && webResponse.StatusCode == HttpStatusCode.ServiceUnavailable)
-							{
-								error = "maintenance";
-							}
+							error = "maintenance";
 						}
-
-						OnTransportError.Invoke(error, requestError);
-						return;
 					}
 
-					// Parse reponse array
-					JArray responseArray;
-					try
-					{
-						responseArray = JArray.Parse(responseString);
-					}
-					catch (Exception parseError)
-					{
-						OnTransportError.Invoke("parse", parseError);
-						return;
-					}
+					OnTransportError.Invoke(error, requestError);
+					return;
+				}
 
-					// Let CommandCenter know this batch was successful
-					OnSendComplete.Invoke();
+				// Parse reponse array
+				JArray responseArray;
+				try
+				{
+					responseArray = JArray.Parse(responseString);
+				}
+				catch (Exception parseError)
+				{
+					OnTransportError.Invoke("parse", parseError);
+					return;
+				}
 
-					// Return array for processing
-					cb(responseArray);
-				});
+				// Let CommandCenter know this batch was successful
+				OnSendComplete.Invoke();
+
+				// Return array for processing
+				cb(responseArray);
+			});
 		}
 	}
 }

@@ -133,26 +133,20 @@ namespace Wizcorp.MageSDK.MageClient
 
 							// Grab module instance from singleton base
 							Type singletonType = typeof(Singleton<>).MakeGenericType(t);
-							Object instance = singletonType.InvokeMember("Instance", staticProperty, null, null, null);
+							object instance = singletonType.InvokeMember("Instance", staticProperty, null, null, null);
 
 							// Setup module
 							Type moduleType = typeof(Module<>).MakeGenericType(t);
 							Type t1 = t;
 							Async.Series(
 								new List<Action<Action<Exception>>>() {
+									// Setup module user commands
 									callbackInner => {
-										// Setup module user commands
-										var arguments = new object[] {
-											callbackInner
-										};
-										moduleType.InvokeMember("SetupUsercommands", publicMethod, null, instance, arguments);
+										moduleType.InvokeMember("SetupUsercommands", publicMethod, null, instance, new object[] { callbackInner });
 									},
+									// Setup module static data
 									callbackInner => {
-										// Setup module static data
-										var arguments = new object[] {
-											callbackInner
-										};
-										moduleType.InvokeMember("SetupStaticData", publicMethod, null, instance, arguments);
+										moduleType.InvokeMember("SetupStaticData", publicMethod, null, instance, new object[] { callbackInner });
 									}
 								},
 								error => {
@@ -172,10 +166,7 @@ namespace Wizcorp.MageSDK.MageClient
 
 									// Invoke the setup method on the module
 									Logger(moduleName).Info("Executing setup function");
-									var arguments = new object[] {
-										callback
-									};
-									t1.InvokeMember("Setup", publicMethod, null, instance, arguments);
+									t1.InvokeMember("Setup", publicMethod, null, instance, new object[] { callback });
 								});
 
 							return;

@@ -9,12 +9,12 @@ namespace Wizcorp.MageSDK.MageClient.Message.Client
 {
 	public class LongPolling : TransportClient
 	{
-		private Mage Mage
+		private static Mage Mage
 		{
 			get { return Mage.Instance; }
 		}
 
-		private Logger Logger
+		private static Logger Logger
 		{
 			get { return Mage.Logger("longpolling"); }
 		}
@@ -28,7 +28,7 @@ namespace Wizcorp.MageSDK.MageClient.Message.Client
 		private Action<string> processMessages;
 
 		//
-		HttpRequest currentRequest;
+		private HttpRequest currentRequest;
 
 		// Required interval timer for polling delay
 		private int errorInterval;
@@ -121,57 +121,54 @@ namespace Wizcorp.MageSDK.MageClient.Message.Client
 			// Send poll request and wait for a response
 			string endpoint = getEndpoint();
 			Logger.Debug("Sending request: " + endpoint);
-			currentRequest = HttpRequest.Get(
-				endpoint,
-				getHeaders(),
-				Mage.Cookies,
-				(requestError, responseString) => {
-					currentRequest = null;
+			currentRequest = HttpRequest.Get(endpoint, getHeaders(), Mage.Cookies, (requestError, responseString) => {
+				currentRequest = null;
 
-					// Ignore errors if we have been stopped
-					if (requestError != null && !running)
-					{
-						Logger.Debug("Stopped");
-						return;
-					}
+				// Ignore errors if we have been stopped
+				if (requestError != null && !running)
+				{
+					Logger.Debug("Stopped");
+					return;
+				}
 
-					if (requestError != null)
+				if (requestError != null)
+				{
+					var exception = requestError as HttpRequestException;
+					if (exception != null)
 					{
-						if (requestError is HttpRequestException)
+						// Only log web exceptions if they aren't an empty response or gateway timeout
+						HttpRequestException requestException = exception;
+						if (requestException.Status != 0 && requestException.Status != 504)
 						{
-							// Only log web exceptions if they aren't an empty response or gateway timeout
-							HttpRequestException requestException = requestError as HttpRequestException;
-							if (requestException.Status != 0 && requestException.Status != 504)
-							{
-								Logger.Error("(" + requestException.Status.ToString() + ") " + requestError.Message);
-							}
+							Logger.Error("(" + requestException.Status.ToString() + ") " + exception.Message);
 						}
-						else
-						{
-							Logger.Error(requestError.ToString());
-						}
-
-						QueueNextRequest(errorInterval);
-						return;
 					}
-
-					// Call the message processer hook and re-call request loop function
-					try
+					else
 					{
-						Logger.Verbose("Recieved response: " + responseString);
-						if (responseString != null)
-						{
-							processMessages(responseString);
-						}
+						Logger.Error(requestError.ToString());
+					}
 
-						RequestLoop();
-					}
-					catch (Exception error)
+					QueueNextRequest(errorInterval);
+					return;
+				}
+
+				// Call the message processer hook and re-call request loop function
+				try
+				{
+					Logger.Verbose("Recieved response: " + responseString);
+					if (responseString != null)
 					{
-						Logger.Error(error.ToString());
-						QueueNextRequest(errorInterval);
+						processMessages(responseString);
 					}
-				});
+
+					RequestLoop();
+				}
+				catch (Exception error)
+				{
+					Logger.Error(error.ToString());
+					QueueNextRequest(errorInterval);
+				}
+			});
 		}
 	}
 }

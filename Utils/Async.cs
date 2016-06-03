@@ -12,64 +12,62 @@ namespace Wizcorp.MageSDK.Utils
 	/// </summary>
 	public static class Async
 	{
-		public static void Each<T>(List<T> items, Action<T, Action<Exception>> fn, Action<Exception> cb)
+		public static void Each<T>(List<T> items, Action<T, Action<Exception>> fn, Action<Exception> callback)
 		{
 			if (items == null || items.Count == 0)
 			{
-				cb(null);
+				callback(null);
 				return;
 			}
 
-			var currentItemI = 0;
+			var currentItem = 0;
 			Action iterate = null;
 			iterate = () => {
-				if (currentItemI >= items.Count)
+				if (currentItem >= items.Count)
 				{
-					cb(null);
+					callback(null);
 					return;
 				}
 
 				// Execute the given function on this item
-				fn(
-					items[currentItemI],
-					error => {
-						// Stop iteration if there was an error
-						if (error != null)
-						{
-							cb(error);
-							return;
-						}
+				fn(items[currentItem], error => {
+					// Stop iteration if there was an error
+					if (error != null)
+					{
+						callback(error);
+						return;
+					}
 
-						// Continue to next item
-						currentItemI++;
-						iterate();
-					});
+					// Continue to next item
+					currentItem++;
+					iterate();
+				});
 			};
 
 			// Begin the iteration
 			iterate();
 		}
 
-		public static void Series(List<Action<Action<Exception>>> actionItems, Action<Exception> cb)
+		public static void Series(List<Action<Action<Exception>>> actionItems, Action<Exception> callback)
 		{
 			bool isEmpty = actionItems == null || actionItems.Count == 0;
 			if (isEmpty)
 			{
-				cb(null);
+				callback(null);
 				return;
 			}
 
-			var currentItemI = 0;
+			var currentItem = 0;
 			Action iterate = null;
 			iterate = () => {
-				if (currentItemI >= actionItems.Count)
+				if (currentItem >= actionItems.Count)
 				{
-					cb(null);
+					callback(null);
 					return;
 				}
 
 				// Shift an element from the list
-				Action<Action<Exception>> actionItem = actionItems[currentItemI];
+				Action<Action<Exception>> actionItem = actionItems[currentItem];
 
 				// Execute the given function on this item
 				actionItem(
@@ -77,12 +75,12 @@ namespace Wizcorp.MageSDK.Utils
 						// Stop iteration if there was an error
 						if (error != null)
 						{
-							cb(error);
+							callback(error);
 							return;
 						}
 
 						// Continue to next item
-						currentItemI++;
+						currentItem++;
 						iterate();
 					});
 			};

@@ -15,12 +15,12 @@ namespace Wizcorp.MageSDK.MageClient.Message
 {
 	public class MessageStream
 	{
-		private Mage Mage
+		private static Mage Mage
 		{
 			get { return Mage.Instance; }
 		}
 
-		private Logger Logger
+		private static Logger Logger
 		{
 			get { return Mage.Logger("messagestream"); }
 		}
@@ -49,21 +49,17 @@ namespace Wizcorp.MageSDK.MageClient.Message
 			InitializeMessageList();
 
 			// Start transport client when session is acquired
-			Mage.EventManager.On(
-				"session.set",
-				(sender, session) => {
-					sessionKey = UnityEngine.WWW.EscapeURL(session["key"].ToString());
-					transportClient.Start();
-				});
+			Mage.EventManager.On("session.set", (sender, session) => {
+				sessionKey = UnityEngine.WWW.EscapeURL(session["key"].ToString());
+				transportClient.Start();
+			});
 
 			// Stop the message client when session is lost
-			Mage.EventManager.On(
-				"session.unset",
-				(sender, reason) => {
-					transportClient.Stop();
-					InitializeMessageList();
-					sessionKey = null;
-				});
+			Mage.EventManager.On("session.unset", (sender, reason) => {
+				transportClient.Stop();
+				InitializeMessageList();
+				sessionKey = null;
+			});
 
 			// Also stop the message client when the editor is stopped
 			#if UNITY_EDITOR
@@ -129,25 +125,17 @@ namespace Wizcorp.MageSDK.MageClient.Message
 			}
 
 			// Create new transport client instance
-			if (transport == TransportType.SHORTPOLLING)
-			{
-				Func<string> getShortPollingEndpoint = () => {
-					return GetHttpPollingEndpoint("shortpolling");
-				};
-
-				transportClient = new ShortPolling(getShortPollingEndpoint, GetHttpHeaders, ProcessMessagesString);
-			}
-			else if (transport == TransportType.LONGPOLLING)
-			{
-				Func<string> getLongPollingEndpoint = () => {
-					return GetHttpPollingEndpoint("longpolling");
-				};
-
-				transportClient = new LongPolling(getLongPollingEndpoint, GetHttpHeaders, ProcessMessagesString);
-			}
-			else
-			{
-				throw new Exception("Invalid transport type: " + transport);
+			switch (transport) {
+				case TransportType.SHORTPOLLING:
+					Func<string> getShortPollingEndpoint = () => GetHttpPollingEndpoint("shortpolling");
+					transportClient = new ShortPolling(getShortPollingEndpoint, GetHttpHeaders, ProcessMessagesString);
+					break;
+				case TransportType.LONGPOLLING:
+					Func<string> getLongPollingEndpoint = () => GetHttpPollingEndpoint("longpolling");
+					transportClient = new LongPolling(getLongPollingEndpoint, GetHttpHeaders, ProcessMessagesString);
+					break;
+				default:
+					throw new Exception("Invalid transport type: " + transport);
 			}
 		}
 

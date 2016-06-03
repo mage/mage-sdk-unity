@@ -59,9 +59,10 @@ namespace Wizcorp.MageSDK.MageClient
 			{
 				string topic = StaticTopics[i];
 
-				var query = new JObject();
-				query.Add("topic", new JValue(topic));
-				query.Add("index", new JObject());
+				var query = new JObject {
+					{"topic", new JValue(topic)},
+					{"index", new JObject()}
+				};
 				queries.Add(topic, query);
 			}
 
