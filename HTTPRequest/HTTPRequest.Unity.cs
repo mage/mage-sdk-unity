@@ -7,12 +7,14 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Net;
 using System.Text;
+using System.Reflection;
 
 using UnityEngine;
 
 
 public class HTTPRequest {
 	private WWW request;
+	private CookieContainer cookies;
 	private Action<Exception, string> cb;
 	private Stopwatch timeoutTimer = new Stopwatch();
 
@@ -21,20 +23,37 @@ public class HTTPRequest {
 
 
 	//
-	public HTTPRequest(string url, byte[] postData, Dictionary<string, string> headers, Action<Exception, string> cb) {
+	public HTTPRequest(string url, string contentType, byte[] postData, Dictionary<string, string> headers, CookieContainer cookies, Action<Exception, string> cb) {
 		// Start timeout timer
 		timeoutTimer.Start();
 
 		// Queue constructor for main thread execution
-		HTTPRequestManager.Queue(Constructor(url, postData, headers, cb));
+		HTTPRequestManager.Queue(Constructor(url, contentType, postData, headers, cookies, cb));
 	}
 
 
 	//
-	private IEnumerator Constructor(string url, byte[] postData, Dictionary<string, string> headers, Action<Exception, string> cb) {
-		this.cb = cb;
-		this.request = new WWW(url, postData, headers);
+	private IEnumerator Constructor(string url, string contentType, byte[] postData, Dictionary<string, string> headers, CookieContainer cookies, Action<Exception, string> cb) {
+		Dictionary<string, string> headersCopy = new Dictionary<string, string>(headers);
 
+		// Set content type if provided
+		if (contentType != null) {
+			headersCopy.Add("ContentType", contentType);
+		}
+
+		//
+		Uri requestUri = new Uri(url);
+		string cookieString = cookies.GetCookieHeader(requestUri);
+		if (!string.IsNullOrEmpty(cookieString)) {
+			headersCopy.Add("Cookie", cookieString);
+		}
+
+		// Setup private properties and fire off the request
+		this.cb = cb;
+		this.cookies = cookies;
+		this.request = new WWW(url, postData, headersCopy);
+
+		// Initiate response wait loop
 		HTTPRequestManager.Queue(WaitLoop());
 		yield break;
 	}
@@ -76,7 +95,21 @@ public class HTTPRequest {
 			yield break;
 		}
 
-		// Otherwise return the response
+		// Otherwise check for cookies and return the response
+		Uri requestUri = new Uri(request.url);
+		PropertyInfo pinfoHeadersString = typeof(WWW).GetProperty("responseHeadersString", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+
+		if (pinfoHeadersString != null) {
+			string headersString = pinfoHeadersString.GetValue(request, null) as string;
+			string[] headerLines = headersString.Split('\n');
+
+			foreach (string headerStr in headerLines) {
+				if (headerStr.StartsWith("set-cookie:", true, null)) {
+					cookies.SetCookies(requestUri, headerStr.Remove(0, 11));
+				}
+			}
+		}
+
 		cb(null, request.text);
 	}
 
@@ -94,11 +127,9 @@ public class HTTPRequest {
 
 	// Create GET request and return it
 	public static HTTPRequest Get(string url, Dictionary<string, string> headers, CookieContainer cookies, Action<Exception, string> cb) {
-		// TODO: COOKIE SUPPORT
-
 		// Create request and return it
 		// The callback will be called when the request is complete
-		return new HTTPRequest(url, null, headers, cb);
+		return new HTTPRequest(url, null, null, headers, cookies, cb);
 	}
 	
 	// Create POST request and return it
@@ -109,18 +140,7 @@ public class HTTPRequest {
 	
 	// Create POST request and return it
 	public static HTTPRequest Post(string url, string contentType, byte[] postData, Dictionary<string, string> headers, CookieContainer cookies, Action<Exception, string> cb) {
-		Dictionary<string, string> headersCopy = new Dictionary<string, string>(headers);
-		
-		// TODO: COOKIE SUPPORT
-		
-		// Set content type if provided
-		if (contentType != null) {
-			headersCopy.Add("ContentType", contentType);
-		}
-		
-		// Create request and return it
-		// The callback will be called when the request is complete
-		return new HTTPRequest(url, postData, headersCopy, cb);
+		return new HTTPRequest(url, contentType, postData, headers, cookies, cb);
 	}
 }
 #endif
