@@ -1,4 +1,4 @@
-﻿namespace Wizcorp.MageSDK.MageClient.Message.Client
+﻿namespace Wizcorp.MageSDK.MageClient.Message
 {
 	public enum TransportType
 	{
