@@ -2,8 +2,7 @@
 
 namespace Wizcorp.MageSDK.Utils
 {
-	public class SceneInstance<T> : MonoBehaviour
-		where T : class
+	public class SceneInstance<T> : MonoBehaviour where T : class
 	{
 		public static T Instance
 		{

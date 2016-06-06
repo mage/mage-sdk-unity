@@ -12,7 +12,7 @@ namespace Wizcorp.MageSDK.Utils
 	/// </summary>
 	public static class Async
 	{
-		public static void Each<T>(List<T> items, Action<T, Action<Exception>> fn, Action<Exception> callback)
+		public static void Each<T>(List<T> items, Action<T, Action<Exception>> actionItem, Action<Exception> callback)
 		{
 			if (items == null || items.Count == 0)
 			{
@@ -30,7 +30,7 @@ namespace Wizcorp.MageSDK.Utils
 				}
 
 				// Execute the given function on this item
-				fn(items[currentItem], error => {
+				actionItem(items[currentItem], error => {
 					// Stop iteration if there was an error
 					if (error != null)
 					{
@@ -70,19 +70,18 @@ namespace Wizcorp.MageSDK.Utils
 				Action<Action<Exception>> actionItem = actionItems[currentItem];
 
 				// Execute the given function on this item
-				actionItem(
-					error => {
-						// Stop iteration if there was an error
-						if (error != null)
-						{
-							callback(error);
-							return;
-						}
+				actionItem(error => {
+					// Stop iteration if there was an error
+					if (error != null)
+					{
+						callback(error);
+						return;
+					}
 
-						// Continue to next item
-						currentItem++;
-						iterate();
-					});
+					// Continue to next item
+					currentItem++;
+					iterate();
+				});
 			};
 
 			// Begin the iteration
