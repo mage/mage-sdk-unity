@@ -9,10 +9,9 @@ public class MessageStream {
 	private Logger logger { get { return mage.logger("messagestream"); } }
 
 	// Endpoint and credentials
-	private string _endpoint;
-	private string _username;
-	private string _password;
-	private string _sessionKey;
+	private string endpoint;
+	Dictionary<string, string> headers;
+	private string sessionKey;
 
 	// Current transport client
 	private TransportClient transportClient;
@@ -42,7 +41,7 @@ public class MessageStream {
 
 		// Start transport client when session is acquired
 		mage.eventManager.on ("session.set", (object sender, JToken session) => {
-			_sessionKey = UnityEngine.WWW.EscapeURL(session["key"].ToString());
+			sessionKey = UnityEngine.WWW.EscapeURL(session["key"].ToString());
 			transportClient.start();
 		});
 		
@@ -50,7 +49,7 @@ public class MessageStream {
 		mage.eventManager.on ("session.unset", (object sender, JToken reason) => {
 			transportClient.stop();
 			initializeMessageList();
-			_sessionKey = null;
+			sessionKey = null;
 		});
 
 		// Also stop the message client when the editor is stopped
@@ -59,7 +58,7 @@ public class MessageStream {
 			if (newState == EditorPlayModeState.Stopped) {
 				transportClient.stop();
 				initializeMessageList();
-				_sessionKey = null;
+				sessionKey = null;
 			}
 		};
 		#endif
@@ -77,15 +76,14 @@ public class MessageStream {
 		}
 
 		initializeMessageList();
-		_sessionKey = null;
+		sessionKey = null;
 	}
 
 
 	// Updates URI and credentials 
-	public void SetEndpoint(string baseURL, string username = null, string password = null) {
-		_endpoint = baseURL + "/msgstream";
-		_username = username;
-		_password = password;
+	public void SetEndpoint(string baseURL, Dictionary<string, string> headers = null) {
+		this.endpoint = baseURL + "/msgstream";
+		this.headers = headers;
 	}
 
 
@@ -119,7 +117,7 @@ public class MessageStream {
 
 	// Returns the endpoint URL for polling transport clients i.e. longpolling and shortpolling
 	private string getHttpPollingEndpoint(string transport) {
-		string endpoint = _endpoint + "?transport=" + transport + "&sessionKey=" + _sessionKey;
+		string endpoint = this.endpoint + "?transport=" + transport + "&sessionKey=" + sessionKey;
 		if (confirmIds.Count > 0) {
 			endpoint += "&confirmIds=" + string.Join(",", confirmIds.ToArray());
 			confirmIds.Clear();
@@ -131,14 +129,6 @@ public class MessageStream {
 	
 	// Returns the required HTTP headers
 	private Dictionary<string, string> getHttpHeaders() {
-		if (_username == null && _password == null) {
-			return null;
-		}
-		
-		Dictionary<string, string> headers = new Dictionary<string, string>();
-		string authInfo = _username + ":" + _password;
-		string encodedAuth = Convert.ToBase64String(Encoding.Default.GetBytes(authInfo));
-		headers.Add("Authorization", "Basic " + encodedAuth);
 		return headers;
 	}
 

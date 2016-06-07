@@ -8,14 +8,12 @@ using Newtonsoft.Json.Linq;
 
 public class JSONRPC {
 	// Endpoint and Basic Authentication
-	private string _endpoint;
-	private string _username = null;
-	private string _password = null;
+	private string endpoint;
+	Dictionary<string, string> headers;
 
-	public void SetEndpoint(string endpoint, string username = null, string password = null) {
-		_endpoint = endpoint;
-		_username = username;
-		_password = password;
+	public void SetEndpoint(string endpoint, Dictionary<string, string> headers = null) {
+		this.endpoint = endpoint;
+		this.headers = new Dictionary<string, string>(headers);
 	}
 
 	public void Call(string methodName, JObject parameters, Dictionary<string, string> headers, CookieContainer cookies, Action<Exception, JObject> cb) {
@@ -100,20 +98,22 @@ public class JSONRPC {
 
 	private void SendRequest(string postData, Dictionary<string, string> headers, CookieContainer cookies, Action<Exception, string> cb) {
 		// Make sure the endpoint is set
-		if (string.IsNullOrEmpty(_endpoint)) {
+		if (string.IsNullOrEmpty(this.endpoint)) {
 			cb(new Exception("Endpoint has not been set"), null);
 			return;
 		}
 
 		// Make a copy of the provided headers and add additional required headers
-		Dictionary<string, string> _headers = new Dictionary<string, string>(headers);
-		if (_username != null && _password != null) {
-			string authInfo = _username + ":" + _password;
-			string encodedAuth = Convert.ToBase64String(Encoding.Default.GetBytes(authInfo));
-			_headers.Add("Authorization", "Basic " + encodedAuth);
+		Dictionary<string, string> finalHeaders = new Dictionary<string, string>(this.headers);
+		foreach (var header in headers) {
+			if (finalHeaders.ContainsKey(header.Key)) {
+				continue;
+			}
+
+			finalHeaders.Add(header.Key, header.Value);
 		}
 
 		// Send HTTP post to JSON rpc endpoint
-		HTTPRequest.Post(_endpoint, "application/json", postData, _headers, cookies, cb);
+		HTTPRequest.Post(this.endpoint, "application/json", postData, finalHeaders, cookies, cb);
 	}
 }

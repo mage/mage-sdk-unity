@@ -26,8 +26,7 @@ public class Mage : Singleton<Mage> {
 	//
 	string baseUrl;
 	string appName;
-	string username;
-	string password;
+	Dictionary<string, string> headers;
 	public CookieContainer cookies;
 
 	//
@@ -59,18 +58,17 @@ public class Mage : Singleton<Mage> {
 	}
 
 	//
-	public void setEndpoints (string baseUrl, string appName, string username = null, string password = null) {
+	public void setEndpoints (string baseUrl, string appName, Dictionary<string, string> headers = null) {
 		this.baseUrl = baseUrl;
 		this.appName = appName;
-		this.username = username;
-		this.password = password;
+		this.headers = new Dictionary<string, string>(headers);
 
 		if (commandCenter != null) {
-			commandCenter.SetEndpoint(baseUrl, appName, username, password);
+			commandCenter.SetEndpoint(baseUrl, appName, this.headers);
 		}
 
 		if (messageStream != null) {
-			messageStream.SetEndpoint(baseUrl, username, password);
+			messageStream.SetEndpoint(baseUrl, this.headers);
 		}
 	}
 
@@ -99,8 +97,8 @@ public class Mage : Singleton<Mage> {
 
 
 		// Set endpoints
-		commandCenter.SetEndpoint(baseUrl, appName, username, password);
-		messageStream.SetEndpoint(baseUrl, username, password);
+		commandCenter.SetEndpoint(baseUrl, appName, headers);
+		messageStream.SetEndpoint(baseUrl, headers);
 
 		cb(null);
 	}
