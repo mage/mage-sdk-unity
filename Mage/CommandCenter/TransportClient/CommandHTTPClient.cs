@@ -89,8 +89,8 @@ public class CommandHTTPClient : CommandTransportClient {
 				string error = "network";
 
 				// On error
-				var wwwError = requestError as HTTPRequestException;
-				if (wwwError != null && wwwError.Status == 503)
+				var httpError = requestError as HTTPRequestException;
+				if (httpError != null && httpError.Status == 503)
 				{
 					error = "maintenance";
 				}
