@@ -87,12 +87,12 @@ public class CommandHTTPClient : CommandTransportClient {
 			// Check if there was a transport error
 			if (requestError != null) {
 				string error = "network";
-				if (requestError is WebException) {
-					WebException webException = requestError as WebException;
-					HttpWebResponse webResponse = webException.Response as HttpWebResponse;
-					if (webResponse != null && webResponse.StatusCode == HttpStatusCode.ServiceUnavailable) {
-						error = "maintenance";
-					}
+
+				// On error
+				var httpError = requestError as HTTPRequestException;
+				if (httpError != null && httpError.Status == 503)
+				{
+					error = "maintenance";
 				}
 
 				OnTransportError.Invoke(error, requestError);
