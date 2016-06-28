@@ -43,7 +43,10 @@ namespace Wizcorp.MageSDK.Event
 			}
 
 			var execEventList = (Action<object, T>)eventsList[eventTags[eventTag]];
-			execEventList(sender, arguments);
+			if (execEventList != null)
+			{
+				execEventList(sender, arguments);
+			}
 		}
 
 		public void Emit(string eventTag, T arguments)
