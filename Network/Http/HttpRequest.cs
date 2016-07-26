@@ -46,7 +46,7 @@ namespace Wizcorp.MageSDK.Network.Http
 		//
 		private IEnumerator WaitLoop()
 		{
-			while (!request.isDone)
+			while (request != null && !request.isDone)
 			{
 				if (timeoutTimer.ElapsedMilliseconds >= Timeout)
 				{
@@ -55,14 +55,15 @@ namespace Wizcorp.MageSDK.Network.Http
 					Abort();
 					yield break;
 				}
-				else if (request == null)
-				{
-					// Check if we destroyed the request due to an abort
-					yield break;
-				}
 
 				// Otherwise continue to wait
 				yield return null;
+			}
+
+			// Check if we destroyed the request due to an abort
+			if (request == null)
+			{
+				yield break;
 			}
 
 			// Stop the timeout timer
