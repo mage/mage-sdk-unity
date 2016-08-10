@@ -57,6 +57,11 @@ namespace Wizcorp.MageSDK.Event
 		//
 		public void Off(string eventTag, Action<object, T> handler)
 		{
+			if (!eventTags.ContainsKey(eventTag))
+			{
+				return;
+			}
+
 			eventsList.RemoveHandler(eventTags[eventTag], handler);
 		}
 
