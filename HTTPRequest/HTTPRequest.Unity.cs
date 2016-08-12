@@ -1,5 +1,6 @@
-﻿// IF WE ARE USING UNITY, USE THIS VERSION OF THE CLASS
-#if UNITY_5
+﻿// IF WE ARE USING UNITY AND WE HAVE NOT DEFINED THE
+// MAGE_USE_WEBREQUEST MACROS, USE THIS VERSION
+#if UNITY_5 && !MAGE_USE_WEBREQUEST
 
 using System;
 using System.Collections;
@@ -16,15 +17,27 @@ public class HTTPRequest {
 	private WWW request;
 	private CookieContainer cookies;
 	private Action<Exception, string> cb;
-	private Stopwatch timeoutTimer = new Stopwatch();
+	private Stopwatch timeoutTimer;
 
-	//
-	public double timeout = 100 * 1000;
+    // Timeout setting for request
+    private long _timeout = 100 * 1000;
+    public long timeout
+    {
+        get
+        {
+            return _timeout;
+        }
+        set
+        {
+            _timeout = value;
+        }
+    }
 
 
-	//
-	public HTTPRequest(string url, string contentType, byte[] postData, Dictionary<string, string> headers, CookieContainer cookies, Action<Exception, string> cb) {
+    // Constructor
+    public HTTPRequest(string url, string contentType, byte[] postData, Dictionary<string, string> headers, CookieContainer cookies, Action<Exception, string> cb) {
 		// Start timeout timer
+        timeoutTimer = new Stopwatch();
 		timeoutTimer.Start();
 
 		// Queue constructor for main thread execution
@@ -32,7 +45,7 @@ public class HTTPRequest {
 	}
 
 
-	//
+	// Main thread constructor
 	private IEnumerator Constructor(string url, string contentType, byte[] postData, Dictionary<string, string> headers, CookieContainer cookies, Action<Exception, string> cb) {
 		Dictionary<string, string> headersCopy = new Dictionary<string, string>(headers);
 
@@ -41,31 +54,33 @@ public class HTTPRequest {
 			headersCopy.Add("ContentType", contentType);
 		}
 
-		//
-		Uri requestUri = new Uri(url);
-		string cookieString = cookies.GetCookieHeader(requestUri);
-		if (!string.IsNullOrEmpty(cookieString)) {
-			headersCopy.Add("Cookie", cookieString);
-		}
+		// Set cookies if provided
+        if (cookies != null) {
+		    Uri requestUri = new Uri(url);
+		    string cookieString = cookies.GetCookieHeader(requestUri);
+		    if (!string.IsNullOrEmpty(cookieString)) {
+			    headersCopy.Add("Cookie", cookieString);
+		    }
+        }
 
 		// Setup private properties and fire off the request
 		this.cb = cb;
 		this.cookies = cookies;
 		this.request = new WWW(url, postData, headersCopy);
 
-		// Initiate response wait loop
+		// Initiate response
 		HTTPRequestManager.Queue(WaitLoop());
 		yield break;
 	}
 
 
-	//
+	// Wait for www request to complete with timeout checks
 	private IEnumerator WaitLoop() {
 		while (!request.isDone) {
 			if (timeoutTimer.ElapsedMilliseconds >= timeout) {
-				// Timed out abort the request with timeout error
-				cb(new Exception("Request timed out"), null);
-				this.Abort();
+                // Timed out abort the request with timeout error
+                this.Abort();
+                cb(new Exception("Request timed out"), null);
 				yield break;
 			} else if (request == null) {
 				// Check if we destroyed the request due to an abort
@@ -76,8 +91,9 @@ public class HTTPRequest {
 			yield return null;
 		}
 
-		// Stop the timeout timer
+		// Cleanup timeout
 		timeoutTimer.Stop();
+        timeoutTimer = null;
 
 		// Check if there is a callback
 		if (cb == null) {
@@ -115,14 +131,20 @@ public class HTTPRequest {
 
 
 	// Abort request
-	public void Abort() {
-		WWW _request = request;
+	public void Abort()
+    {
+        if (request == null)
+        {
+            return;
+        }
+
+        WWW _request = request;
 		request = null;
 
 		_request.Dispose();
 		timeoutTimer.Stop();
+        timeoutTimer = null;
 	}
-
 
 
 	// Create GET request and return it
