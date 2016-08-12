@@ -11,7 +11,7 @@ public class CommandHTTPClient : CommandTransportClient {
 	
 	//
 	private string endpoint;
-	Dictionary<string, string> headers;
+	private Dictionary<string, string> headers;
 	
 	//
 	public override void SetEndpoint(string baseUrl, string appName, Dictionary<string, string> headers = null) {

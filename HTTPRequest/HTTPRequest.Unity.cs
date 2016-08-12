@@ -19,25 +19,25 @@ public class HTTPRequest {
 	private Action<Exception, string> cb;
 	private Stopwatch timeoutTimer;
 
-    // Timeout setting for request
-    private long _timeout = 100 * 1000;
-    public long timeout
-    {
-        get
-        {
-            return _timeout;
-        }
-        set
-        {
-            _timeout = value;
-        }
-    }
+	// Timeout setting for request
+	private long _timeout = 100 * 1000;
+	public long timeout
+	{
+		get
+		{
+			return _timeout;
+		}
+		set
+		{
+			_timeout = value;
+		}
+	}
 
 
-    // Constructor
-    public HTTPRequest(string url, string contentType, byte[] postData, Dictionary<string, string> headers, CookieContainer cookies, Action<Exception, string> cb) {
+	// Constructor
+	public HTTPRequest(string url, string contentType, byte[] postData, Dictionary<string, string> headers, CookieContainer cookies, Action<Exception, string> cb) {
 		// Start timeout timer
-        timeoutTimer = new Stopwatch();
+		timeoutTimer = new Stopwatch();
 		timeoutTimer.Start();
 
 		// Queue constructor for main thread execution
@@ -55,13 +55,13 @@ public class HTTPRequest {
 		}
 
 		// Set cookies if provided
-        if (cookies != null) {
-		    Uri requestUri = new Uri(url);
-		    string cookieString = cookies.GetCookieHeader(requestUri);
-		    if (!string.IsNullOrEmpty(cookieString)) {
-			    headersCopy.Add("Cookie", cookieString);
-		    }
-        }
+		if (cookies != null) {
+			Uri requestUri = new Uri(url);
+			string cookieString = cookies.GetCookieHeader(requestUri);
+			if (!string.IsNullOrEmpty(cookieString)) {
+				headersCopy.Add("Cookie", cookieString);
+			}
+		}
 
 		// Setup private properties and fire off the request
 		this.cb = cb;
@@ -78,9 +78,9 @@ public class HTTPRequest {
 	private IEnumerator WaitLoop() {
 		while (!request.isDone) {
 			if (timeoutTimer.ElapsedMilliseconds >= timeout) {
-                // Timed out abort the request with timeout error
-                this.Abort();
-                cb(new Exception("Request timed out"), null);
+				// Timed out abort the request with timeout error
+				this.Abort();
+				cb(new Exception("Request timed out"), null);
 				yield break;
 			} else if (request == null) {
 				// Check if we destroyed the request due to an abort
@@ -93,7 +93,7 @@ public class HTTPRequest {
 
 		// Cleanup timeout
 		timeoutTimer.Stop();
-        timeoutTimer = null;
+		timeoutTimer = null;
 
 		// Check if there is a callback
 		if (cb == null) {
@@ -112,6 +112,11 @@ public class HTTPRequest {
 		}
 
 		// Otherwise check for cookies and return the response
+		// HACK: we need to use reflection as cookieContainer
+		// junks same key cookies as it uses a dictionary. To
+		// work around this we use reflection to get the original
+		// cookie response text, which isn't exposed, and parse
+		// it ourselves
 		Uri requestUri = new Uri(request.url);
 		PropertyInfo pinfoHeadersString = typeof(WWW).GetProperty("responseHeadersString", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
 
@@ -132,18 +137,18 @@ public class HTTPRequest {
 
 	// Abort request
 	public void Abort()
-    {
-        if (request == null)
-        {
-            return;
-        }
+	{
+		if (request == null)
+		{
+			return;
+		}
 
-        WWW _request = request;
+		WWW _request = request;
 		request = null;
 
 		_request.Dispose();
 		timeoutTimer.Stop();
-        timeoutTimer = null;
+		timeoutTimer = null;
 	}
 
 
