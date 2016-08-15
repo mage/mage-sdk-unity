@@ -11,14 +11,12 @@ public class CommandHTTPClient : CommandTransportClient {
 	
 	//
 	private string endpoint;
-	private string username;
-	private string password;
+	private Dictionary<string, string> headers;
 	
 	//
-	public override void SetEndpoint(string baseUrl, string appName, string username = null, string password = null) {
+	public override void SetEndpoint(string baseUrl, string appName, Dictionary<string, string> headers = null) {
 		this.endpoint = baseUrl + "/" + appName;
-		this.username = username;
-		this.password = password;
+		this.headers = new Dictionary<string, string>(headers);
 	}
 	
 	//
@@ -83,25 +81,18 @@ public class CommandHTTPClient : CommandTransportClient {
 	}
 
 	private void SendRequest(string batchUrl, string postData, Action<JArray> cb) {
-		Dictionary<string, string> headers = new Dictionary<string, string>();
-		if (username != null && password != null) {
-			string authInfo = username + ":" + password;
-			string encodedAuth = Convert.ToBase64String(Encoding.Default.GetBytes(authInfo));
-			headers.Add("Authorization", "Basic " + encodedAuth);
-		}
-
 		HTTPRequest.Post(batchUrl, "", postData, headers, mage.cookies, (Exception requestError, string responseString) => {
 			logger.verbose("Recieved response: " + responseString);
 
 			// Check if there was a transport error
 			if (requestError != null) {
 				string error = "network";
-				if (requestError is WebException) {
-					WebException webException = requestError as WebException;
-					HttpWebResponse webResponse = webException.Response as HttpWebResponse;
-					if (webResponse != null && webResponse.StatusCode == HttpStatusCode.ServiceUnavailable) {
-						error = "maintenance";
-					}
+
+				// On error
+				var httpError = requestError as HTTPRequestException;
+				if (httpError != null && httpError.Status == 503)
+				{
+					error = "maintenance";
 				}
 
 				OnTransportError.Invoke(error, requestError);

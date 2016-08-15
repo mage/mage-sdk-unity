@@ -11,8 +11,7 @@ public class CommandCenter {
 	// Endpoint and credentials
 	private string baseUrl;
 	private string appName;
-	private string username;
-	private string password;
+	Dictionary<string, string> headers = new Dictionary<string, string>();
 
 	// Current transport client
 	private CommandTransportClient transportClient;
@@ -38,10 +37,10 @@ public class CommandCenter {
 		// Create new transport client instance
 		if (transportType == CommandTransportType.HTTP) {
 			transportClient = new CommandHTTPClient() as CommandTransportClient;
-			transportClient.SetEndpoint(baseUrl, appName, username, password);
+			transportClient.SetEndpoint(baseUrl, appName, headers);
 		} else if (transportType == CommandTransportType.JSONRPC) {
 			transportClient = new CommandJSONRPCClient() as CommandTransportClient;
-			transportClient.SetEndpoint(baseUrl, appName, username, password);
+			transportClient.SetEndpoint(baseUrl, appName, headers);
 		} else {
 			throw new Exception("Invalid transport type: " + transportType);
 		}
@@ -52,14 +51,13 @@ public class CommandCenter {
 	}
 
 	//
-	public void SetEndpoint(string baseUrl, string appName, string username = null, string password = null) {
+	public void SetEndpoint(string baseUrl, string appName, Dictionary<string, string> headers = null) {
 		this.baseUrl = baseUrl;
 		this.appName = appName;
-		this.username = username;
-		this.password = password;
+		this.headers = new Dictionary<string, string>(headers);
 
 		if (transportClient != null) {
-			transportClient.SetEndpoint(baseUrl, appName, username, password);
+			transportClient.SetEndpoint(this.baseUrl, this.appName, this.headers);
 		}
 	}
 

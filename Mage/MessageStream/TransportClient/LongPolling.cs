@@ -17,7 +17,7 @@ public class LongPolling : TransportClient {
 	private Action<string> _processMessages;
 
 	//
-	HttpWebRequest _currentRequest;
+	HTTPRequest _currentRequest;
 
 	// Required interval timer for polling delay
 	private int _errorInterval;
@@ -58,7 +58,7 @@ public class LongPolling : TransportClient {
 		}
 
 		if (_currentRequest != null) {
-			_currentRequest.Abort ();
+			_currentRequest.Abort();
 			_currentRequest = null;
 		} else {
 			logger.debug("Connections Stopped");
@@ -102,15 +102,11 @@ public class LongPolling : TransportClient {
 			}
 
 			if (requestError != null) {
-				if (requestError is WebException) {
+				if (requestError is HTTPRequestException) {
 					// Only log web exceptions if they aren't an empty response or gateway timeout
-					WebException webException = requestError as WebException;
-					HttpWebResponse webResponse = webException.Response as HttpWebResponse;
-					if (
-						webException.Status != WebExceptionStatus.ReceiveFailure &&
-						(webResponse == null || webResponse.StatusCode != HttpStatusCode.GatewayTimeout)
-					) {
-						logger.error(requestError.ToString());
+					HTTPRequestException requestException = requestError as HTTPRequestException;
+					if (requestException.Status != 0 && requestException.Status != 504) {
+						logger.error("(" + requestException.Status.ToString() + ") " + requestError.Message);
 					}
 				} else {
 					logger.error(requestError.ToString());

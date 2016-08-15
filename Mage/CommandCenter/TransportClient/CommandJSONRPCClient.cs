@@ -10,8 +10,8 @@ public class CommandJSONRPCClient : CommandTransportClient {
 	private JSONRPC rpcClient = new JSONRPC();
 
 	//
-	public override void SetEndpoint(string baseUrl, string appName, string username = null, string password = null) {
-		rpcClient.SetEndpoint(baseUrl + "/" + appName + "/jsonrpc", username, password);
+	public override void SetEndpoint(string baseUrl, string appName, Dictionary<string, string> headers = null) {
+		rpcClient.SetEndpoint(baseUrl + "/" + appName + "/jsonrpc", headers);
 	}
 
 	//
