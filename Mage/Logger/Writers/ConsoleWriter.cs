@@ -9,77 +9,77 @@ public class ConsoleWriter : LogWriter {
 		config = logLevels;
 
 		if (config.Contains("verbose")) {
-			Logger.logEmitter.on("verbose", Verbose);
+			Logger.logEmitter.on("log:verbose", Verbose);
 		}
 
 		if (config.Contains("debug")) {
-			Logger.logEmitter.on("debug", Debug);
+			Logger.logEmitter.on("log:debug", Debug);
 		}
 
 		if (config.Contains("info")) {
-			Logger.logEmitter.on("info", Info);
+			Logger.logEmitter.on("log:info", Info);
 		}
 
 		if (config.Contains("notice")) {
-			Logger.logEmitter.on("notice", Notice);
+			Logger.logEmitter.on("log:notice", Notice);
 		}
 
 		if (config.Contains("warning")) {
-			Logger.logEmitter.on("warning", Warning);
+			Logger.logEmitter.on("log:warning", Warning);
 		}
 
 		if (config.Contains("error")) {
-			Logger.logEmitter.on("error", Error);
+			Logger.logEmitter.on("log:error", Error);
 		}
 
 		if (config.Contains("critical")) {
-			Logger.logEmitter.on("critical", Critical);
+			Logger.logEmitter.on("log:critical", Critical);
 		}
 
 		if (config.Contains("alert")) {
-			Logger.logEmitter.on("alert", Alert);
+			Logger.logEmitter.on("log:alert", Alert);
 		}
 		
 		if (config.Contains("emergency")) {
-			Logger.logEmitter.on("emergency", Emergency);
+			Logger.logEmitter.on("log:emergency", Emergency);
 		}
 	}
 
 	public override void Dispose() {
 		if (config.Contains("verbose")) {
-			Logger.logEmitter.off("verbose", Verbose);
+			Logger.logEmitter.off("log:verbose", Verbose);
 		}
 		
 		if (config.Contains("debug")) {
-			Logger.logEmitter.off("debug", Debug);
+			Logger.logEmitter.off("log:debug", Debug);
 		}
 		
 		if (config.Contains("info")) {
-			Logger.logEmitter.off("info", Info);
+			Logger.logEmitter.off("log:info", Info);
 		}
 		
 		if (config.Contains("notice")) {
-			Logger.logEmitter.off("notice", Notice);
+			Logger.logEmitter.off("log:notice", Notice);
 		}
 		
 		if (config.Contains("warning")) {
-			Logger.logEmitter.off("warning", Warning);
+			Logger.logEmitter.off("log:warning", Warning);
 		}
 		
 		if (config.Contains("error")) {
-			Logger.logEmitter.off("error", Error);
+			Logger.logEmitter.off("log:error", Error);
 		}
 		
 		if (config.Contains("critical")) {
-			Logger.logEmitter.off("critical", Critical);
+			Logger.logEmitter.off("log:critical", Critical);
 		}
 		
 		if (config.Contains("alert")) {
-			Logger.logEmitter.off("alert", Alert);
+			Logger.logEmitter.off("log:alert", Alert);
 		}
 		
 		if (config.Contains("emergency")) {
-			Logger.logEmitter.off("emergency", Emergency);
+			Logger.logEmitter.off("log:emergency", Emergency);
 		}
 	}
 

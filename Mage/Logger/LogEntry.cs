@@ -1,59 +1,76 @@
 
 public class LogEntry {
 	//
+	public string channel;
 	public string context;
 	public object data;
 	public string message;
 
-	public LogEntry(string _context, object _data = null) {
-		context = _context;
-		data = _data;
+	public LogEntry(string context, object data = null) {
+		this.context = context;
+		this.data = data;
+	}
+
+
+	//
+	private void emitLog() {
+		Logger.logEmitter.emit("log", this);
+		Logger.logEmitter.emit("log:" + this.channel, this);
 	}
 	
 	
 	//
-	public void verbose (string _message) {
-		message = _message;
-		Logger.logEmitter.emit("verbose", this);
+	public void verbose (string message) {
+		this.channel = "verbose";
+		this.message = message;
+		emitLog();
 	}
 	
-	public void debug (string _message) {
-		message = _message;
-		Logger.logEmitter.emit("debug", this);
+	public void debug (string message) {
+		this.channel = "debug";
+		this.message = message;
+		emitLog();
 	}
 	
-	public void info (string _message) {
-		message = _message;
-		Logger.logEmitter.emit("info", this);
+	public void info (string message) {
+		this.channel = "info";
+		this.message = message;
+		emitLog();
 	}
 	
-	public void notice (string _message) {
-		message = _message;
-		Logger.logEmitter.emit("notice", this);
+	public void notice (string message) {
+		this.channel = "notice";
+		this.message = message;
+		emitLog();
 	}
 	
-	public void warning (string _message) {
-		message = _message;
-		Logger.logEmitter.emit("warning", this);
+	public void warning (string message) {
+		this.channel = "warning";
+		this.message = message;
+		emitLog();
 	}
 	
-	public void error (string _message) {
-		message = _message;
-		Logger.logEmitter.emit("error", this);
+	public void error (string message) {
+		this.channel = "error";
+		this.message = message;
+		emitLog();
 	}
 	
-	public void critical (string _message) {
-		message = _message;
-		Logger.logEmitter.emit("critical", this);
+	public void critical (string message) {
+		this.channel = "critical";
+		this.message = message;
+		emitLog();
 	}
 	
-	public void alert (string _message) {
-		message = _message;
-		Logger.logEmitter.emit("alert", this);
+	public void alert (string message) {
+		this.channel = "alert";
+		this.message = message;
+		emitLog();
 	}
 	
-	public void emergency (string _message) {
-		message = _message;
-		Logger.logEmitter.emit("emergency", this);
+	public void emergency (string message) {
+		this.channel = "emergency";
+		this.message = message;
+		emitLog();
 	}
 }
