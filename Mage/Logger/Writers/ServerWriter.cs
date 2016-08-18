@@ -22,7 +22,7 @@ public class ServerWriter : LogWriter {
 
 
 	private void HandleLog(object sender, LogEntry logEntry) {
-		if (config != null && !config.Contains(logEntry.channel)) {
+		if (config == null || !config.Contains(logEntry.channel)) {
 			return;
 		}
 
