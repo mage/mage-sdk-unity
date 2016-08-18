@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 
 using Newtonsoft.Json.Linq;
@@ -117,21 +117,6 @@ public class CommandCenter {
 
 			// Otherwise send the batch
 			SendBatch();
-		}
-	}
-
-	// Either send this command immediately if nothing is being sent,
-	// otherwise queue it and send it after the current send is complete.
-	public void QueueCommand(string commandName, JObject parameters, Action<Exception, JToken> cb) {
-		lock ((object)this) {
-			// If we are not sending anything, send immediately
-			if (sendingBatch == null) {
-				SendCommand(commandName, parameters, cb);
-				return;
-			}
-
-			// Otherwise queue it to current
-			currentBatch.Queue(commandName, parameters, cb);
 		}
 	}
 
