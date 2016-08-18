@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 
 using Newtonsoft.Json.Linq;
@@ -22,7 +22,7 @@ public class ServerWriter : LogWriter {
 
 
 	private void HandleLog(object sender, LogEntry logEntry) {
-		if (!config.Contains(logEntry.channel)) {
+		if (config != null && !config.Contains(logEntry.channel)) {
 			return;
 		}
 
@@ -30,7 +30,7 @@ public class ServerWriter : LogWriter {
 		JObject dataObject = null;
 		if (logEntry.data != null)
 		{
-			JObject.FromObject(logEntry.data);
+			dataObject = JObject.FromObject(logEntry.data);
 		}
 
 		JObject arguments = new JObject();
@@ -39,10 +39,8 @@ public class ServerWriter : LogWriter {
 		arguments.Add("data", dataObject);
 
 		mage.commandCenter.SendCommand("logger.sendReport", arguments, (Exception error, JToken result) => {
-			if (error != null) {
-				// We honestly can't do anything about this....
-				return;
-			}
+			// if (error)
+			// We honestly can't do anything about this....
 		});
 	}
 }
