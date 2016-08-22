@@ -13,25 +13,24 @@ namespace Wizcorp.MageSDK.MageClient
 {
 	public class Mage : Singleton<Mage>
 	{
-		private string appName;
-		public Archivist Archivist;
 
 		//
-		private string baseUrl;
+		public Archivist Archivist;
 		public Command.CommandCenter CommandCenter;
 		public CookieContainer Cookies;
-
-		//
 		public EventManager EventManager;
 		private Logger logger;
 
 		//
 		private Dictionary<string, Logger> loggers = new Dictionary<string, Logger>();
 		public MessageStream MessageStream;
-		private string password;
 		public Session Session;
-		private string username;
 
+		//
+		private string baseUrl;
+		private string appName;
+		private Dictionary<string, string> headers;
+		public CookieContainer cookies;
 
 		// Avoid putting setup logic in the contstuctor. Only things that can be
 		// carried between game sessions should go here. Otherwise we need to be
@@ -63,21 +62,20 @@ namespace Wizcorp.MageSDK.MageClient
 		}
 
 		//
-		public void SetEndpoints(string url, string app, string login = null, string pass = null)
+		public void SetEndpoints(string url, string app, Dictionary<string, string> headerParams = null)
 		{
 			baseUrl = url;
 			appName = app;
-			username = login;
-			password = pass;
+			headers = (headerParams != null) ? new Dictionary<string, string>(headerParams) : new Dictionary<string, string>();
 
 			if (CommandCenter != null)
 			{
-				CommandCenter.SetEndpoint(baseUrl, appName, login, password);
+				CommandCenter.SetEndpoint(baseUrl, appName, headers);
 			}
 
 			if (MessageStream != null)
 			{
-				MessageStream.SetEndpoint(baseUrl, login, password);
+				MessageStream.SetEndpoint(baseUrl, headers);
 			}
 		}
 
@@ -89,7 +87,6 @@ namespace Wizcorp.MageSDK.MageClient
 			{
 				MessageStream.Dispose();
 			}
-
 
 			// Instantiate HTTPRequestManager
 			HttpRequestManager.Instantiate();
@@ -105,8 +102,8 @@ namespace Wizcorp.MageSDK.MageClient
 			Archivist = new Archivist();
 
 			// Set endpoints
-			CommandCenter.SetEndpoint(baseUrl, appName, username, password);
-			MessageStream.SetEndpoint(baseUrl, username, password);
+			CommandCenter.SetEndpoint(baseUrl, appName, headers);
+			MessageStream.SetEndpoint(baseUrl, headers);
 
 			cb(null);
 		}
@@ -116,77 +113,75 @@ namespace Wizcorp.MageSDK.MageClient
 		{
 			// Setup application modules
 			logger.Info("Setting up modules");
-			Async.Each(
-				moduleNames,
-				(moduleName, callback) => {
-					logger.Info("Setting up module: " + moduleName);
+			Async.Each(moduleNames, (moduleName, callback) => {
+				logger.Info("Setting up module: " + moduleName);
 
-					// Use reflection to find module by name
-					Assembly assembly = Assembly.GetExecutingAssembly();
-					Type[] assemblyTypes = assembly.GetTypes();
-					foreach (Type t in assemblyTypes)
+				// Use reflection to find module by name
+				Assembly assembly = Assembly.GetExecutingAssembly();
+				Type[] assemblyTypes = assembly.GetTypes();
+				foreach (Type t in assemblyTypes)
+				{
+					if (moduleName == t.Name)
 					{
-						if (moduleName == t.Name)
-						{
-							BindingFlags staticProperty = BindingFlags.Static | BindingFlags.GetProperty;
-							BindingFlags publicMethod = BindingFlags.Public | BindingFlags.InvokeMethod;
+						BindingFlags staticProperty = BindingFlags.Static | BindingFlags.GetProperty;
+						BindingFlags publicMethod = BindingFlags.Public | BindingFlags.InvokeMethod;
 
-							// Grab module instance from singleton base
-							Type singletonType = typeof(Singleton<>).MakeGenericType(t);
-							object instance = singletonType.InvokeMember("Instance", staticProperty, null, null, null);
+						// Grab module instance from singleton base
+						Type singletonType = typeof(Singleton<>).MakeGenericType(t);
+						object instance = singletonType.InvokeMember("Instance", staticProperty, null, null, null);
 
-							// Setup module
-							Type moduleType = typeof(Module<>).MakeGenericType(t);
-							Type t1 = t;
-							Async.Series(
-								new List<Action<Action<Exception>>>() {
-									// Setup module user commands
-									callbackInner => {
-										moduleType.InvokeMember("SetupUsercommands", publicMethod, null, instance, new object[] { callbackInner });
-									},
-									// Setup module static data
-									callbackInner => {
-										moduleType.InvokeMember("SetupStaticData", publicMethod, null, instance, new object[] { callbackInner });
-									}
+						// Setup module
+						Type moduleType = typeof(Module<>).MakeGenericType(t);
+						Type t1 = t;
+						Async.Series(
+							new List<Action<Action<Exception>>>() {
+								// Setup module user commands
+								callbackInner => {
+									moduleType.InvokeMember("SetupUsercommands", publicMethod, null, instance, new object[] { callbackInner });
 								},
-								error => {
-									if (error != null)
-									{
-										callback(error);
-										return;
-									}
+								// Setup module static data
+								callbackInner => {
+									moduleType.InvokeMember("SetupStaticData", publicMethod, null, instance, new object[] { callbackInner });
+								}
+							},
+							error => {
+								if (error != null)
+								{
+									callback(error);
+									return;
+								}
 
-									// Check if the module has a setup method
-									if (t1.GetMethod("Setup") == null)
-									{
-										Logger(moduleName).Info("No setup function");
-										callback(null);
-										return;
-									}
+								// Check if the module has a setup method
+								if (t1.GetMethod("Setup") == null)
+								{
+									Logger(moduleName).Info("No setup function");
+									callback(null);
+									return;
+								}
 
-									// Invoke the setup method on the module
-									Logger(moduleName).Info("Executing setup function");
-									t1.InvokeMember("Setup", publicMethod, null, instance, new object[] { callback });
-								});
+								// Invoke the setup method on the module
+								Logger(moduleName).Info("Executing setup function");
+								t1.InvokeMember("Setup", publicMethod, null, instance, new object[] { callback });
+							});
 
-							return;
-						}
-					}
-
-					// If nothing found throw an error
-					callback(new Exception("Can't find module " + moduleName));
-				},
-				error => {
-					if (error != null)
-					{
-						logger.Data(error).Error("Setup failed!");
-						cb(error);
 						return;
 					}
+				}
 
-					logger.Info("Setup complete");
-					cb(null);
-				});
+				// If nothing found throw an error
+				callback(new Exception("Can't find module " + moduleName));
+			},
+			error => {
+				if (error != null)
+				{
+					logger.Data(error).Error("Setup failed!");
+					cb(error);
+					return;
+				}
+
+				logger.Info("Setup complete");
+				cb(null);
+			});
 		}
 
 

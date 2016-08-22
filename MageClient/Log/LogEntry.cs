@@ -3,6 +3,7 @@ namespace Wizcorp.MageSDK.Log
 	public class LogEntry
 	{
 		//
+		public string Channel;
 		public string Context;
 		public object Data;
 		public string Message;
@@ -13,60 +14,74 @@ namespace Wizcorp.MageSDK.Log
 			Data = data;
 		}
 
+		//
+		private void emitLog() {
+			Logger.LogEmitter.Emit("log", this);
+			Logger.LogEmitter.Emit("log:" + Channel, this);
+		}
 
 		//
 		public void Verbose(string message)
 		{
+			Channel = "verbose";
 			Message = message;
-			Logger.LogEmitter.Emit("verbose", this);
+			emitLog();
 		}
 
 		public void Debug(string message)
 		{
+			Channel = "debug";
 			Message = message;
-			Logger.LogEmitter.Emit("debug", this);
+			emitLog();
 		}
 
 		public void Info(string message)
 		{
+			Channel = "info";
 			Message = message;
-			Logger.LogEmitter.Emit("info", this);
+			emitLog();
 		}
 
 		public void Notice(string message)
 		{
+			Channel = "notice";
 			Message = message;
-			Logger.LogEmitter.Emit("notice", this);
+			emitLog();
 		}
 
 		public void Warning(string message)
 		{
+			Channel = "warning";
 			Message = message;
-			Logger.LogEmitter.Emit("warning", this);
+			emitLog();
 		}
 
 		public void Error(string message)
 		{
+			Channel = "error";
 			Message = message;
-			Logger.LogEmitter.Emit("error", this);
+			emitLog();
 		}
 
 		public void Critical(string message)
 		{
+			Channel = "critical";
 			Message = message;
-			Logger.LogEmitter.Emit("critical", this);
+			emitLog();
 		}
 
 		public void Alert(string message)
 		{
+			Channel = "alert";
 			Message = message;
-			Logger.LogEmitter.Emit("alert", this);
+			emitLog();
 		}
 
 		public void Emergency(string message)
 		{
+			Channel = "emergency";
 			Message = message;
-			Logger.LogEmitter.Emit("emergency", this);
+			emitLog();
 		}
 	}
 }
