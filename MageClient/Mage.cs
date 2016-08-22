@@ -62,18 +62,11 @@ namespace Wizcorp.MageSDK.MageClient
 		}
 
 		//
-		public void SetEndpoints (string url, string app, Dictionary<string, string> headersParams = null)
+		public void SetEndpoints(string url, string app, Dictionary<string, string> headerParams = null)
 		{
 			baseUrl = url;
 			appName = app;
-			if (headersParams != null)
-			{
-				headers = headersParams;
-			}
-			else
-			{
-				headers = new Dictionary<string, string>();
-			}
+			headers = (headerParams != null) ? new Dictionary<string, string>(headerParams) : new Dictionary<string, string>();
 
 			if (CommandCenter != null)
 			{
@@ -196,7 +189,7 @@ namespace Wizcorp.MageSDK.MageClient
 		public IEnumerator SetupTask(Action<Exception> cb)
 		{
 			// Execute async setup function
-			MageSetupStatus setupStatus = new MageSetupStatus();
+			var setupStatus = new MageSetupStatus();
 			Setup(error => {
 				setupStatus.Error = error;
 				setupStatus.Done = true;

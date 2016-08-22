@@ -14,10 +14,10 @@ namespace Wizcorp.MageSDK.Network.JsonRpc
 		private string endpoint;
 		private Dictionary<string, string> headers;
 
-		public void SetEndpoint(string endpoint, Dictionary<string, string> headers = null)
+		public void SetEndpoint(string url, Dictionary<string, string> headerParams)
 		{
-			this.endpoint = endpoint;
-			this.headers = new Dictionary<string, string>(headers);
+			endpoint = url;
+			headers = new Dictionary<string, string>(headerParams);
 		}
 
 		public void Call(string methodName, JObject parameters, Dictionary<string, string> headers, CookieContainer cookies, Action<Exception, JObject> cb)
@@ -129,7 +129,7 @@ namespace Wizcorp.MageSDK.Network.JsonRpc
 			}
 
 			// Make a copy of the provided headers and add additional required headers
-			Dictionary<string, string> finalHeaders = new Dictionary<string, string>(this.headers);
+			var finalHeaders = new Dictionary<string, string>(this.headers);
 			foreach (var header in headers) {
 				if (finalHeaders.ContainsKey(header.Key)) {
 					continue;

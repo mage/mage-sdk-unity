@@ -30,10 +30,10 @@ namespace Wizcorp.MageSDK.Command.Client
 		private Dictionary<string, string> headers;
 
 		//
-		public override void SetEndpoint(string url, string app, Dictionary<string, string> headers = null)
+		public override void SetEndpoint(string url, string app, Dictionary<string, string> headerParams = null)
 		{
 			endpoint = string.Format("{0}/{1}", url, app);
-			this.headers = new Dictionary<string, string>(headers);
+			headers = new Dictionary<string, string>(headerParams);
 		}
 
 		//
@@ -70,7 +70,8 @@ namespace Wizcorp.MageSDK.Command.Client
 			// Send HTTP request
 			SendRequest(batchUrl, postData, responseArray => {
 				// Process each command response
-				try {
+				try
+				{
 					for (var batchId = 0; batchId < responseArray.Count; batchId += 1)
 					{
 						var commandResponse = responseArray[batchId] as JArray;
@@ -110,11 +111,12 @@ namespace Wizcorp.MageSDK.Command.Client
 
 		private void SendRequest(string batchUrl, string postData, Action<JArray> cb)
 		{
-			HttpRequest.Post(batchUrl, "", postData, headers, Mage.cookies, (Exception requestError, string responseString) => {
+			HttpRequest.Post(batchUrl, "", postData, headers, Mage.cookies, (requestError, responseString) => {
 				Logger.Verbose("Recieved response: " + responseString);
 
 				// Check if there was a transport error
-				if (requestError != null) {
+				if (requestError != null)
+				{
 					string error = "network";
 
 					// On error
@@ -130,9 +132,12 @@ namespace Wizcorp.MageSDK.Command.Client
 
 				// Parse reponse array
 				JArray responseArray;
-				try {
+				try
+				{
 					responseArray = JArray.Parse(responseString);
-				} catch (Exception parseError) {
+				}
+				catch (Exception parseError)
+				{
 					OnTransportError.Invoke("parse", parseError);
 					return;
 				}

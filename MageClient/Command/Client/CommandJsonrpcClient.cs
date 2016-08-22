@@ -24,7 +24,7 @@ namespace Wizcorp.MageSDK.Command.Client
 		private Jsonrpc rpcClient = new Jsonrpc();
 
 		//
-		public override void SetEndpoint(string url, string app, Dictionary<string, string> headers = null)
+		public override void SetEndpoint(string url, string app, Dictionary<string, string> headers)
 		{
 			string baseUrl = string.Format("{0}/{1}/jsonrpc", url, app);
 			rpcClient.SetEndpoint(baseUrl, headers);

@@ -24,19 +24,20 @@ namespace Wizcorp.MageSDK.MageClient.Command
 		// Endpoint and credentials
 		private string baseUrl;
 		private string appName;
-		private Dictionary<string, string> headers = new Dictionary<string, string>();
-
-		// Current transport client
-		private CommandTransportClient transportClient;
+		private Dictionary<string, string> headers;
 
 		// Command Batches
 		private int nextQueryId = 1;
 		private CommandBatch currentBatch;
 		private CommandBatch sendingBatch;
 
+		// Current transport client
+		private CommandTransportClient transportClient;
+
 		//
 		public CommandCenter(CommandTransportType transportType = CommandTransportType.HTTP)
 		{
+			headers = new Dictionary<string, string>();
 			currentBatch = new CommandBatch(nextQueryId++);
 			SetTransport(transportType);
 		}
@@ -69,11 +70,11 @@ namespace Wizcorp.MageSDK.MageClient.Command
 		}
 
 		//
-		public void SetEndpoint(string url, string app, Dictionary<string, string> headers = null)
+		public void SetEndpoint(string url, string app, Dictionary<string, string> headerParams)
 		{
 			baseUrl = url;
 			appName = app;
-			this.headers = new Dictionary<string, string>(headers);
+			headers = new Dictionary<string, string>(headerParams);
 
 			if (transportClient != null)
 			{

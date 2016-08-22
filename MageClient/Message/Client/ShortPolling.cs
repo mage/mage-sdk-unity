@@ -32,7 +32,6 @@ namespace Wizcorp.MageSDK.MageClient.Message.Client
 		private int errorInterval;
 		private Timer intervalTimer;
 
-
 		// Constructor
 		public ShortPolling(Func<string> getEndpointFn, Func<Dictionary<string, string>> getHeadersFn, Action<string> processMessagesFn, int requestInterval = 5000, int errorInterval = 5000)
 		{
@@ -42,7 +41,6 @@ namespace Wizcorp.MageSDK.MageClient.Message.Client
 			this.requestInterval = requestInterval;
 			this.errorInterval = errorInterval;
 		}
-
 
 		// Starts the poller
 		public override void Start()
@@ -56,7 +54,6 @@ namespace Wizcorp.MageSDK.MageClient.Message.Client
 			running = true;
 			RequestLoop();
 		}
-
 
 		// Stops the poller
 		public override void Stop()
@@ -73,7 +70,6 @@ namespace Wizcorp.MageSDK.MageClient.Message.Client
 			}
 			running = false;
 		}
-
 
 		// Queues the next poll request
 		private void QueueNextRequest(int waitFor)

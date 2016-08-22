@@ -98,10 +98,10 @@ namespace Wizcorp.MageSDK.MageClient.Message
 		}
 
 		// Updates URI and credentials 
-		public void SetEndpoint(string url, Dictionary<string, string> headers = null)
+		public void SetEndpoint(string url, Dictionary<string, string> headerParams)
 		{
 			endpoint = url + "/msgstream";
-			this.headers = headers;
+			headers = new Dictionary<string, string>(headerParams);
 		}
 
 		// Sets up given transport client type
@@ -144,7 +144,8 @@ namespace Wizcorp.MageSDK.MageClient.Message
 		}
 
 		// Returns the required HTTP headers
-		private Dictionary<string, string> GetHttpHeaders() {
+		private Dictionary<string, string> GetHttpHeaders()
+		{
 			return headers;
 		}
 
@@ -160,7 +161,6 @@ namespace Wizcorp.MageSDK.MageClient.Message
 			AddMessages(messages);
 			ProcessMessages();
 		}
-
 
 		// Add list of messages to message queue
 		private void AddMessages(JObject messages)

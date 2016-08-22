@@ -25,14 +25,8 @@ namespace Wizcorp.MageSDK.Network.Http
 		private long timeout = 100 * 1000;
 		public long Timeout
 		{
-			get
-			{
-				return timeout;
-			}
-			set
-			{
-				timeout = value;
-			}
+			get { return timeout; }
+			set { timeout = value; }
 		}
 
 		// Constructor

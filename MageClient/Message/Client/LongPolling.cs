@@ -34,7 +34,6 @@ namespace Wizcorp.MageSDK.MageClient.Message.Client
 		private int errorInterval;
 		private Timer intervalTimer;
 
-
 		// Constructor
 		public LongPolling(Func<string> getEndpointFn, Func<Dictionary<string, string>> getHeadersFn, Action<string> processMessagesFn, int errorInterval = 5000)
 		{
@@ -43,7 +42,6 @@ namespace Wizcorp.MageSDK.MageClient.Message.Client
 			processMessages = processMessagesFn;
 			this.errorInterval = errorInterval;
 		}
-
 
 		// Starts the poller
 		public override void Start()
@@ -57,7 +55,6 @@ namespace Wizcorp.MageSDK.MageClient.Message.Client
 			running = true;
 			RequestLoop();
 		}
-
 
 		// Stops the poller
 		public override void Stop()
@@ -86,7 +83,6 @@ namespace Wizcorp.MageSDK.MageClient.Message.Client
 			}
 		}
 
-
 		// Queues the next poll request
 		private void QueueNextRequest(int waitFor)
 		{
@@ -99,7 +95,6 @@ namespace Wizcorp.MageSDK.MageClient.Message.Client
 				waitFor,
 				Timeout.Infinite);
 		}
-
 
 		// Poller request function
 		private void RequestLoop()

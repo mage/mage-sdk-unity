@@ -12,7 +12,6 @@ namespace Wizcorp.MageSDK.Log.Writers
 		public ServerWriter(List<string> logLevels)
 		{
 			config = logLevels;
-
 			Logger.LogEmitter.On("log", HandleLog);
 		}
 
