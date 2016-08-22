@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 
 using Newtonsoft.Json.Linq;
 
@@ -20,20 +21,18 @@ namespace Wizcorp.MageSDK.MageClient.Command
 			get { return Mage.Logger("CommandCenter"); }
 		}
 
-		private string appName;
-
 		// Endpoint and credentials
 		private string baseUrl;
-		private CommandBatch currentBatch;
-
-		// Command Batches
-		private int nextQueryId = 1;
-		private string password;
-		private CommandBatch sendingBatch;
+		private string appName;
+		private Dictionary<string, string> headers = new Dictionary<string, string>();
 
 		// Current transport client
 		private CommandTransportClient transportClient;
-		private string username;
+
+		// Command Batches
+		private int nextQueryId = 1;
+		private CommandBatch currentBatch;
+		private CommandBatch sendingBatch;
 
 		//
 		public CommandCenter(CommandTransportType transportType = CommandTransportType.HTTP)
@@ -52,12 +51,12 @@ namespace Wizcorp.MageSDK.MageClient.Command
 			if (transportType == CommandTransportType.HTTP)
 			{
 				transportClient = new CommandHttpClient();
-				transportClient.SetEndpoint(baseUrl, appName, username, password);
+				transportClient.SetEndpoint(baseUrl, appName, headers);
 			}
 			else if (transportType == CommandTransportType.JSONRPC)
 			{
 				transportClient = new CommandJsonrpcClient();
-				transportClient.SetEndpoint(baseUrl, appName, username, password);
+				transportClient.SetEndpoint(baseUrl, appName, headers);
 			}
 			else
 			{
@@ -70,16 +69,15 @@ namespace Wizcorp.MageSDK.MageClient.Command
 		}
 
 		//
-		public void SetEndpoint(string url, string app, string login = null, string pass = null)
+		public void SetEndpoint(string url, string app, Dictionary<string, string> headers = null)
 		{
 			baseUrl = url;
 			appName = app;
-			username = login;
-			password = pass;
+			this.headers = new Dictionary<string, string>(headers);
 
 			if (transportClient != null)
 			{
-				transportClient.SetEndpoint(baseUrl, appName, username, password);
+				transportClient.SetEndpoint(baseUrl, appName, headers);
 			}
 		}
 

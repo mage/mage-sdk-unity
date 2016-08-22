@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 
 using Wizcorp.MageSDK.CommandCenter.Client;
 using Wizcorp.MageSDK.Log;
@@ -23,10 +24,10 @@ namespace Wizcorp.MageSDK.Command.Client
 		private Jsonrpc rpcClient = new Jsonrpc();
 
 		//
-		public override void SetEndpoint(string url, string app, string login = null, string pass = null)
+		public override void SetEndpoint(string url, string app, Dictionary<string, string> headers = null)
 		{
 			string baseUrl = string.Format("{0}/{1}/jsonrpc", url, app);
-			rpcClient.SetEndpoint(baseUrl, login, pass);
+			rpcClient.SetEndpoint(baseUrl, headers);
 		}
 
 		//

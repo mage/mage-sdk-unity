@@ -27,15 +27,13 @@ namespace Wizcorp.MageSDK.Command.Client
 
 		//
 		private string endpoint;
-		private string password;
-		private string username;
+		private Dictionary<string, string> headers;
 
 		//
-		public override void SetEndpoint(string url, string app, string login = null, string pass = null)
+		public override void SetEndpoint(string url, string app, Dictionary<string, string> headers = null)
 		{
 			endpoint = string.Format("{0}/{1}", url, app);
-			username = login;
-			password = pass;
+			this.headers = new Dictionary<string, string>(headers);
 		}
 
 		//
@@ -72,8 +70,7 @@ namespace Wizcorp.MageSDK.Command.Client
 			// Send HTTP request
 			SendRequest(batchUrl, postData, responseArray => {
 				// Process each command response
-				try
-				{
+				try {
 					for (var batchId = 0; batchId < responseArray.Count; batchId += 1)
 					{
 						var commandResponse = responseArray[batchId] as JArray;
@@ -113,29 +110,18 @@ namespace Wizcorp.MageSDK.Command.Client
 
 		private void SendRequest(string batchUrl, string postData, Action<JArray> cb)
 		{
-			var headers = new Dictionary<string, string>();
-			if (username != null && password != null)
-			{
-				string authInfo = username + ":" + password;
-				string encodedAuth = Convert.ToBase64String(Encoding.Default.GetBytes(authInfo));
-				headers.Add("Authorization", "Basic " + encodedAuth);
-			}
-
-			HttpRequest.Post(batchUrl, "", postData, headers, Mage.Cookies, (requestError, responseString) => {
+			HttpRequest.Post(batchUrl, "", postData, headers, Mage.cookies, (Exception requestError, string responseString) => {
 				Logger.Verbose("Recieved response: " + responseString);
 
 				// Check if there was a transport error
-				if (requestError != null)
-				{
-					var error = "network";
-					if (requestError is WebException)
+				if (requestError != null) {
+					string error = "network";
+
+					// On error
+					var httpError = requestError as HttpRequestException;
+					if (httpError != null && httpError.Status == 503)
 					{
-						var webException = requestError as WebException;
-						var webResponse = webException.Response as HttpWebResponse;
-						if (webResponse != null && webResponse.StatusCode == HttpStatusCode.ServiceUnavailable)
-						{
-							error = "maintenance";
-						}
+						error = "maintenance";
 					}
 
 					OnTransportError.Invoke(error, requestError);
@@ -144,12 +130,9 @@ namespace Wizcorp.MageSDK.Command.Client
 
 				// Parse reponse array
 				JArray responseArray;
-				try
-				{
+				try {
 					responseArray = JArray.Parse(responseString);
-				}
-				catch (Exception parseError)
-				{
+				} catch (Exception parseError) {
 					OnTransportError.Invoke("parse", parseError);
 					return;
 				}

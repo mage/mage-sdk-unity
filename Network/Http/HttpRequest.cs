@@ -1,10 +1,13 @@
-﻿#if UNITY_5
+﻿// IF WE ARE USING UNITY AND WE HAVE NOT DEFINED THE
+// MAGE_USE_WEBREQUEST MACROS, USE THIS VERSION
+#if UNITY_5 && !MAGE_USE_WEBREQUEST
 
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Net;
+using System.Reflection;
 using System.Text;
 
 using UnityEngine;
@@ -13,35 +16,67 @@ namespace Wizcorp.MageSDK.Network.Http
 {
 	public class HttpRequest
 	{
-		private Action<Exception, string> cb;
 		private WWW request;
+		private CookieContainer cookies;
+		private Action<Exception, string> cb;
+		private Stopwatch timeoutTimer;
 
-		//
-		public double Timeout = 100 * 1000;
-		private Stopwatch timeoutTimer = new Stopwatch();
+		// Timeout setting for request
+		private long timeout = 100 * 1000;
+		public long Timeout
+		{
+			get
+			{
+				return timeout;
+			}
+			set
+			{
+				timeout = value;
+			}
+		}
 
-
-		//
-		public HttpRequest(string url, byte[] postData, Dictionary<string, string> headers, Action<Exception, string> cb)
+		// Constructor
+		public HttpRequest(string url, string contentType, byte[] postData, Dictionary<string, string> headers, CookieContainer cookies, Action<Exception, string> cb)
 		{
 			// Start timeout timer
+			timeoutTimer = new Stopwatch();
 			timeoutTimer.Start();
 
 			// Queue constructor for main thread execution
-			HttpRequestManager.Queue(Constructor(url, postData, headers, cb));
+			HttpRequestManager.Queue(Constructor(url, contentType, postData, headers, cookies, cb));
 		}
 
-
-		//
-		private IEnumerator Constructor(string url, byte[] postData, Dictionary<string, string> headers, Action<Exception, string> cb)
+		// Main thread constructor
+		private IEnumerator Constructor(string url, string contentType, byte[] postData, Dictionary<string, string> headers, CookieContainer cookies, Action<Exception, string> cb)
 		{
-			this.cb = cb;
-			request = new WWW(url, postData, headers);
+			Dictionary<string, string> headersCopy = new Dictionary<string, string>(headers);
 
+			// Set content type if provided
+			if (contentType != null)
+			{
+				headersCopy.Add("ContentType", contentType);
+			}
+
+			// Set cookies if provided
+			if (cookies != null)
+			{
+				Uri requestUri = new Uri(url);
+				string cookieString = cookies.GetCookieHeader(requestUri);
+				if (!string.IsNullOrEmpty(cookieString))
+				{
+					headersCopy.Add("Cookie", cookieString);
+				}
+			}
+
+			// Setup private properties and fire off the request
+			this.cb = cb;
+			this.cookies = cookies;
+			request = new WWW(url, postData, headersCopy);
+
+			// Initiate response
 			HttpRequestManager.Queue(WaitLoop());
 			yield break;
 		}
-
 
 		//
 		private IEnumerator WaitLoop()
@@ -51,8 +86,8 @@ namespace Wizcorp.MageSDK.Network.Http
 				if (timeoutTimer.ElapsedMilliseconds >= Timeout)
 				{
 					// Timed out abort the request with timeout error
-					cb(new Exception("Request timed out"), null);
 					Abort();
+					cb(new Exception("Request timed out"), null);
 					yield break;
 				}
 
@@ -66,8 +101,9 @@ namespace Wizcorp.MageSDK.Network.Http
 				yield break;
 			}
 
-			// Stop the timeout timer
+			// Cleanup timeout
 			timeoutTimer.Stop();
+			timeoutTimer = null;
 
 			// Check if there is a callback
 			if (cb == null)
@@ -78,7 +114,7 @@ namespace Wizcorp.MageSDK.Network.Http
 			// Check if there was an error with the request
 			if (request.error != null)
 			{
-				var statusCode = 0;
+				int statusCode = 0;
 				if (request.responseHeaders.ContainsKey("STATUS"))
 				{
 					statusCode = int.Parse(request.responseHeaders["STATUS"].Split(' ')[1]);
@@ -88,59 +124,65 @@ namespace Wizcorp.MageSDK.Network.Http
 				yield break;
 			}
 
+			// Otherwise check for cookies and return the response
+			// HACK: we need to use reflection as cookieContainer
+			// junks same key cookies as it uses a dictionary. To
+			// work around this we use reflection to get the original
+			// cookie response text, which isn't exposed, and parse
+			// it ourselves
+			Uri requestUri = new Uri(request.url);
+			PropertyInfo pinfoHeadersString = typeof(WWW).GetProperty("responseHeadersString", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+
+			if (pinfoHeadersString != null) {
+				string headersString = pinfoHeadersString.GetValue(request, null) as string;
+				string[] headerLines = headersString.Split('\n');
+
+				foreach (string headerStr in headerLines) {
+					if (headerStr.StartsWith("set-cookie:", true, null)) {
+						cookies.SetCookies(requestUri, headerStr.Remove(0, 11));
+					}
+				}
+			}
+
 			// Otherwise return the response
 			cb(null, request.text);
 		}
 
-
 		// Abort request
 		public void Abort()
 		{
+			if (request == null)
+			{
+				return;
+			}
+
 			WWW webRequest = request;
 			request = null;
 
 			webRequest.Dispose();
 			timeoutTimer.Stop();
+			timeoutTimer = null;
 		}
-
 
 		// Create GET request and return it
 		public static HttpRequest Get(string url, Dictionary<string, string> headers, CookieContainer cookies, Action<Exception, string> cb)
 		{
-			// TODO: COOKIE SUPPORT
-
 			// Create request and return it
 			// The callback will be called when the request is complete
-			return new HttpRequest(url, null, headers, cb);
+			return new HttpRequest(url, null, null, headers, cookies, cb);
 		}
 
 		// Create POST request and return it
-		public static HttpRequest Post(
-			string url, string contentType, string postData, Dictionary<string, string> headers, CookieContainer cookies,
-			Action<Exception, string> cb)
+		public static HttpRequest Post(string url, string contentType, string postData, Dictionary<string, string> headers, CookieContainer cookies, Action<Exception, string> cb)
 		{
 			byte[] binaryPostData = Encoding.UTF8.GetBytes(postData);
 			return Post(url, contentType, binaryPostData, headers, cookies, cb);
 		}
 
 		// Create POST request and return it
-		public static HttpRequest Post(
-			string url, string contentType, byte[] postData, Dictionary<string, string> headers, CookieContainer cookies,
-			Action<Exception, string> cb)
+		public static HttpRequest Post(string url, string contentType, byte[] postData, Dictionary<string, string> headers, CookieContainer cookies, Action<Exception, string> cb)
 		{
-			var headersCopy = new Dictionary<string, string>(headers);
-
-			// TODO: COOKIE SUPPORT
-
-			// Set content type if provided
-			if (contentType != null)
-			{
-				headersCopy.Add("ContentType", contentType);
-			}
-
-			// Create request and return it
-			// The callback will be called when the request is complete
-			return new HttpRequest(url, postData, headersCopy, cb);
+			return new HttpRequest(url, contentType, postData, headers, cookies, cb);
 		}
 	}
 }

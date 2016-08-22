@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Text;
 
 using Newtonsoft.Json.Linq;
 
@@ -25,22 +24,19 @@ namespace Wizcorp.MageSDK.MageClient.Message
 			get { return Mage.Logger("messagestream"); }
 		}
 
-		private List<string> confirmIds;
-
-		// Current message stack
-		private int currentMessageId;
-
 		// Endpoint and credentials
 		private string endpoint;
-		private int largestMessageId;
-		private Dictionary<int, JToken> messageQueue;
-		private string password;
+		private Dictionary<string, string> headers;
 		private string sessionKey;
 
 		// Current transport client
 		private TransportClient transportClient;
-		private string username;
 
+		// Current message stack
+		private int currentMessageId;
+		private int largestMessageId;
+		private Dictionary<int, JToken> messageQueue;
+		private List<string> confirmIds;
 
 		// Constructor
 		public MessageStream(TransportType transport = TransportType.LONGPOLLING)
@@ -77,7 +73,6 @@ namespace Wizcorp.MageSDK.MageClient.Message
 			SetTransport(transport);
 		}
 
-
 		//
 		private void InitializeMessageList()
 		{
@@ -88,7 +83,6 @@ namespace Wizcorp.MageSDK.MageClient.Message
 
 			Logger.Debug("Initialized message queue");
 		}
-
 
 		//
 		public void Dispose()
@@ -103,15 +97,12 @@ namespace Wizcorp.MageSDK.MageClient.Message
 			sessionKey = null;
 		}
 
-
 		// Updates URI and credentials 
-		public void SetEndpoint(string url, string login = null, string pass = null)
+		public void SetEndpoint(string url, Dictionary<string, string> headers = null)
 		{
 			endpoint = url + "/msgstream";
-			username = login;
-			password = pass;
+			this.headers = headers;
 		}
-
 
 		// Sets up given transport client type
 		public void SetTransport(TransportType transport)
@@ -139,7 +130,6 @@ namespace Wizcorp.MageSDK.MageClient.Message
 			}
 		}
 
-
 		// Returns the endpoint URL for polling transport clients i.e. longpolling and shortpolling
 		private string GetHttpPollingEndpoint(string transport)
 		{
@@ -153,22 +143,10 @@ namespace Wizcorp.MageSDK.MageClient.Message
 			return url;
 		}
 
-
 		// Returns the required HTTP headers
-		private Dictionary<string, string> GetHttpHeaders()
-		{
-			if (username == null && password == null)
-			{
-				return null;
-			}
-
-			var headers = new Dictionary<string, string>();
-			string authInfo = username + ":" + password;
-			string encodedAuth = Convert.ToBase64String(Encoding.Default.GetBytes(authInfo));
-			headers.Add("Authorization", "Basic " + encodedAuth);
+		private Dictionary<string, string> GetHttpHeaders() {
 			return headers;
 		}
-
 
 		// Deserilizes and processes given messagesString
 		private void ProcessMessagesString(string messagesString)
@@ -233,7 +211,6 @@ namespace Wizcorp.MageSDK.MageClient.Message
 				currentMessageId = lowestMessageId;
 			}
 		}
-
 
 		// Process the message queue till we reach the end or a gap
 		private void ProcessMessages()
