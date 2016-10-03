@@ -6,6 +6,9 @@ public enum TransportType {
 }
 
 public abstract class TransportClient {
+	protected bool _running;
+	public bool running { get { return _running; }}
+
 	public abstract void stop ();
 	public abstract void start();
 }

@@ -80,7 +80,8 @@ public class Mage : Singleton<Mage> {
 		}
 
 
-		// Instantiate HTTPRequestManager
+		// Instantiate Singletons
+		UnityApplicationState.Instantiate();
 		HTTPRequestManager.Instantiate();
 
 
