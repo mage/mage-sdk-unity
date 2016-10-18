@@ -1,4 +1,6 @@
-﻿using Newtonsoft.Json.Linq;
+using System.Collections.Generic;
+
+using Newtonsoft.Json.Linq;
 
 public class Session {
 	private Mage mage { get { return Mage.Instance; }}
@@ -18,6 +20,16 @@ public class Session {
 			actorId = null;
 			sessionKey = null;
 		});
+
+		mage.commandCenter.preSerialiseHook += (CommandBatch commandBatch) => {
+			if (!string.IsNullOrEmpty(sessionKey)) {
+				Dictionary<string, string> sessionHeader = new Dictionary<string, string>();
+				sessionHeader.Add("name", "mage.session");
+				sessionHeader.Add("key", sessionKey);
+
+				commandBatch.batchHeaders.Add(sessionHeader);
+			}
+		};
 	}
 
 	//

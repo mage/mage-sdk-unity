@@ -91,9 +91,10 @@ public class Mage : Singleton<Mage> {
 
 		// Initialize mage internal modules
 		eventManager = new EventManager();
-		session = new Session();
 		commandCenter = new CommandCenter();
 		messageStream = new MessageStream();
+
+		session = new Session();
 		archivist = new Archivist();
 
 

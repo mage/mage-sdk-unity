@@ -1,9 +1,21 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Net;
 using System.Text;
 
 using Newtonsoft.Json.Linq;
+
+public class CommandHttpClientCache {
+	public string batchUrl;
+	public string postData;
+	public Dictionary<string, string> headers;
+
+	public CommandHttpClientCache(string batchUrl, string postData, Dictionary<string, string> headers) {
+		this.batchUrl = batchUrl;
+		this.postData = postData;
+		this.headers = headers;
+	}
+}
 
 public class CommandHTTPClient : CommandTransportClient {
 	private Mage mage { get { return Mage.Instance; } }
@@ -18,37 +30,49 @@ public class CommandHTTPClient : CommandTransportClient {
 		this.endpoint = baseUrl + "/" + appName;
 		this.headers = new Dictionary<string, string>(headers);
 	}
-	
+
 	//
-	public override void SendBatch(CommandBatch commandBatch) {
-		List<string> commands = new List<string> ();
+	public override void SerialiseBatch(CommandBatch commandBatch) {
+		List<string> commands = new List<string>();
 		List<string> data = new List<string>();
 
 		// Attach batch headers to post data
-		JArray batchHeader = new JArray();
-		string sessionKey = mage.session.GetSessionKey();
-		if (!string.IsNullOrEmpty(sessionKey)) {
-			JObject sessionHeader = new JObject();
-			sessionHeader.Add("name", new JValue("mage.session"));
-			sessionHeader.Add("key", new JValue(sessionKey));
-			batchHeader.Add(sessionHeader);
+		JArray batchHeaders = new JArray();
+		for (int batchHeaderI = 0; batchHeaderI < commandBatch.batchHeaders.Count; batchHeaderI += 1) {
+			Dictionary<string, string> batchHeader = commandBatch.batchHeaders[batchHeaderI];
+			batchHeaders.Add(JObject.FromObject(batchHeader));
 		}
-		data.Add(batchHeader.ToString(Newtonsoft.Json.Formatting.None));
+		data.Add(batchHeaders.ToString(Newtonsoft.Json.Formatting.None));
 
 		// Attach command names to url and parameters to post data
-		for (int batchId = 0; batchId < commandBatch.batchItems.Count; batchId += 1) {
-			CommandBatchItem commandItem = commandBatch.batchItems[batchId];
+		for (int batchItemI = 0; batchItemI < commandBatch.batchItems.Count; batchItemI += 1) {
+			CommandBatchItem commandItem = commandBatch.batchItems[batchItemI];
 			commands.Add(commandItem.commandName);
 			data.Add(commandItem.parameters.ToString(Newtonsoft.Json.Formatting.None));
 			logger.data(commandItem.parameters).verbose("sending command: " + commandItem.commandName);
 		}
 
-		// Serialise post data
 		string batchUrl = endpoint + "/" + String.Join(",", commands.ToArray()) + "?queryId=" + commandBatch.queryId.ToString();
 		string postData = string.Join("\n", data.ToArray());
-		
+
+		// Cached the serialisation
+		commandBatch.serialisedCache = (object)new CommandHttpClientCache(
+			batchUrl,
+			postData,
+			new Dictionary<string, string>(this.headers)
+		);
+	}
+	
+	//
+	public override void SendBatch(CommandBatch commandBatch) {
+		// Extract serialisation from cache
+		CommandHttpClientCache serialisedCache = (CommandHttpClientCache)commandBatch.serialisedCache;
+		string batchUrl = serialisedCache.batchUrl;
+		string postData = serialisedCache.postData;
+		Dictionary<string, string> headers = serialisedCache.headers;
+
 		// Send HTTP request
-		SendRequest(batchUrl, postData, (JArray responseArray) => {
+		SendRequest(batchUrl, postData, headers, (JArray responseArray) => {
 			// Process each command response
 			try {
 				for (int batchId = 0; batchId < responseArray.Count; batchId += 1) {
@@ -80,7 +104,7 @@ public class CommandHTTPClient : CommandTransportClient {
 		});
 	}
 
-	private void SendRequest(string batchUrl, string postData, Action<JArray> cb) {
+	private void SendRequest(string batchUrl, string postData, Dictionary<string, string> headers, Action<JArray> cb) {
 		HTTPRequest.Post(batchUrl, "", postData, headers, mage.cookies, (Exception requestError, string responseString) => {
 			logger.verbose("Recieved response: " + responseString);
 
