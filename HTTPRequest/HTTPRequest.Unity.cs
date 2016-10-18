@@ -76,19 +76,21 @@ public class HTTPRequest {
 
 	// Wait for www request to complete with timeout checks
 	private IEnumerator WaitLoop() {
-		while (!request.isDone) {
+		while (request != null && !request.isDone) {
 			if (timeoutTimer.ElapsedMilliseconds >= timeout) {
 				// Timed out abort the request with timeout error
 				this.Abort();
 				cb(new Exception("Request timed out"), null);
 				yield break;
-			} else if (request == null) {
-				// Check if we destroyed the request due to an abort
-				yield break;
 			}
 
 			// Otherwise continue to wait
 			yield return null;
+		}
+
+		// Check if we destroyed the request due to an abort
+		if (request == null) {
+			yield break;
 		}
 
 		// Cleanup timeout
@@ -138,15 +140,15 @@ public class HTTPRequest {
 	// Abort request
 	public void Abort()
 	{
-		if (request == null)
+		if (this.request == null)
 		{
 			return;
 		}
 
-		WWW _request = request;
-		request = null;
+		WWW request = this.request;
+		this.request = null;
 
-		_request.Dispose();
+		request.Dispose();
 		timeoutTimer.Stop();
 		timeoutTimer = null;
 	}

@@ -8,9 +8,6 @@ public class LongPolling : TransportClient {
 	private Mage mage { get { return Mage.Instance; } }
 	private Logger logger { get { return mage.logger("longpolling"); } }
 
-	// Whether or not the poller is working
-	private bool _running = false;
-
 	// Required functions for poll requests
 	private Func<string> _getEndpoint;
 	private Func<Dictionary<string, string>> _getHeaders;
@@ -51,7 +48,7 @@ public class LongPolling : TransportClient {
 		logger.debug("Stopping...");
 
 		if (_intervalTimer != null) {
-			_intervalTimer.Dispose ();
+			_intervalTimer.Dispose();
 			_intervalTimer = null;
 		} else {
 			logger.debug("Timer Stopped");

@@ -52,7 +52,7 @@ public class MessageStream {
 			sessionKey = null;
 		});
 
-		// Also stop the message client when the editor is stopped
+		// Also stop the message client when the application is stopped
 		#if UNITY_EDITOR
 		UnityEditorPlayMode.onEditorModeChanged += (EditorPlayModeState newState) => {
 			if (newState == EditorPlayModeState.Stopped) {
@@ -60,8 +60,22 @@ public class MessageStream {
 				initializeMessageList();
 				sessionKey = null;
 			}
+			if (newState == EditorPlayModeState.Paused && transportClient.running) {
+				transportClient.stop();
+			}
+			if (newState == EditorPlayModeState.Playing && !transportClient.running && sessionKey != null) {
+				transportClient.start();
+			}
 		};
 		#endif
+		UnityApplicationState.Instance.onAppStateChanged += (bool pauseStatus) => {
+			if (pauseStatus && transportClient.running) {
+				transportClient.stop();
+			}
+			if (!pauseStatus && !transportClient.running && sessionKey != null) {
+				transportClient.start();
+			}
+		};
 
 		// Set the selected transport client (or the default)
 		this.SetTransport(transport);
