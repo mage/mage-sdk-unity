@@ -68,7 +68,7 @@ public class MessageStream {
 			}
 		};
 		#endif
-		UnityApplicationState.onAppStateChanged += (bool pauseStatus) => {
+		UnityApplicationState.Instance.onAppStateChanged += (bool pauseStatus) => {
 			if (pauseStatus && transportClient.running) {
 				transportClient.stop();
 			}

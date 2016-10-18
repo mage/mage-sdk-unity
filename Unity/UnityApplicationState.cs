@@ -3,7 +3,7 @@ using System.Collections;
 
 public class UnityApplicationState : MonoSingleton<UnityApplicationState> {
 	public delegate void OnAppStateChanged(bool pauseStatus);
-	public static OnAppStateChanged onAppStateChanged;
+	public OnAppStateChanged onAppStateChanged;
 
 	// What should happen when the application is put into the background
 	void OnApplicationPause(bool pauseStatus) {
