@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 
 using Newtonsoft.Json.Linq;
@@ -6,7 +6,10 @@ using Newtonsoft.Json.Linq;
 
 public class CommandBatch {
 	public int queryId;
+	public List<Dictionary<String, String>> batchHeaders = new List<Dictionary<String, String>>();
 	public List<CommandBatchItem> batchItems = new List<CommandBatchItem>();
+
+	public object serialisedCache;
 
 	public CommandBatch(int queryId) {
 		this.queryId = queryId;

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 
 using Newtonsoft.Json.Linq;
@@ -12,6 +12,12 @@ public class CommandJSONRPCClient : CommandTransportClient {
 	//
 	public override void SetEndpoint(string baseUrl, string appName, Dictionary<string, string> headers = null) {
 		rpcClient.SetEndpoint(baseUrl + "/" + appName + "/jsonrpc", headers);
+	}
+
+	//
+	public override void SerialiseBatch(CommandBatch commandBatch) {
+		logger.verbose("THIS TRANSPORT CLIENT IS NOT IMPLEMENTED");
+		throw new Exception("THIS TRANSPORT CLIENT IS NOT IMPLEMENTED");
 	}
 
 	//

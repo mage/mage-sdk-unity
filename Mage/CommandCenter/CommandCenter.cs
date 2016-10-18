@@ -13,6 +13,11 @@ public class CommandCenter {
 	private string appName;
 	Dictionary<string, string> headers = new Dictionary<string, string>();
 
+	// Message Hooks
+	public delegate void MessageHook(CommandBatch commandBatch);
+	public MessageHook preSerialiseHook;
+	public MessageHook preNetworkHook;
+
 	// Current transport client
 	private CommandTransportClient transportClient;
 
@@ -69,6 +74,20 @@ public class CommandCenter {
 			// Swap batches around locking the queue
 			sendingBatch = currentBatch;
 			currentBatch = new CommandBatch(nextQueryId++);
+
+			// Execute pre-serialisation message hooks
+			if (preSerialiseHook != null) {
+				preSerialiseHook.Invoke(sendingBatch);
+			}
+
+			// Serialise the batch
+			logger.debug("Serialising batch: " + sendingBatch.queryId);
+			transportClient.SerialiseBatch(sendingBatch);
+
+			// Execute pre-network message hooks
+			if (preNetworkHook != null) {
+				preNetworkHook.Invoke(sendingBatch);
+			}
 
 			// Send the batch
 			logger.debug("Sending batch: " + sendingBatch.queryId);
