@@ -6,7 +6,7 @@ using Newtonsoft.Json.Linq;
 
 public class CommandBatch {
 	public int queryId;
-	public List<Dictionary<String, String>> batchHeaders = new List<Dictionary<String, String>>();
+	public List<Dictionary<string, string>> batchHeaders = new List<Dictionary<string, string>>();
 	public List<CommandBatchItem> batchItems = new List<CommandBatchItem>();
 
 	public object serialisedCache;
