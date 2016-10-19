@@ -1,6 +1,8 @@
 ﻿using UnityEngine;
 using System.Collections;
 
+using Wizcorp.MageSDK.Utils;
+
 public class UnityApplicationState : MonoSingleton<UnityApplicationState> {
 	public delegate void OnAppStateChanged(bool pauseStatus);
 	public OnAppStateChanged onAppStateChanged;

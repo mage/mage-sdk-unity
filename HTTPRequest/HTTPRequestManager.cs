@@ -1,27 +1,29 @@
-﻿using System.Collections;
+using System.Collections;
 using System.Collections.Generic;
 
-using UnityEngine;
+using Wizcorp.MageSDK.Utils;
 
-public class HTTPRequestManager : MonoSingleton<HTTPRequestManager> {
-	//
-	private static List<IEnumerator> queued = new List<IEnumerator>();
+namespace Wizcorp.MageSDK.Network.Http {
+	public class HTTPRequestManager : MonoSingleton<HTTPRequestManager> {
+		//
+		private static List<IEnumerator> queued = new List<IEnumerator>();
 
-	//
-	public static void Queue(IEnumerator coroutine) {
-		lock ((object)queued) {
-			queued.Add(coroutine);
-		}
-	}
-
-	//
-	void Update () {
-		lock ((object)queued) {
-			for (int i = 0; i < queued.Count; i += 1) {
-				StartCoroutine(queued[i]);
+		//
+		public static void Queue(IEnumerator coroutine) {
+			lock ((object)queued) {
+				queued.Add(coroutine);
 			}
+		}
 
-			queued.Clear();
+		//
+		void Update() {
+			lock ((object)queued) {
+				for (int i = 0; i < queued.Count; i += 1) {
+					StartCoroutine(queued[i]);
+				}
+
+				queued.Clear();
+			}
 		}
 	}
 }

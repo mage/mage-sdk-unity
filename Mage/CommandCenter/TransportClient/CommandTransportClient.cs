@@ -1,16 +1,20 @@
 using System;
 using System.Collections.Generic;
 
-public enum CommandTransportType {
-	HTTP,
-	JSONRPC
-}
+using Wizcorp.MageSDK.MageClient.Command;
 
-public abstract class CommandTransportClient {
-	public Action OnSendComplete;
-	public Action<string, Exception> OnTransportError;
+namespace Wizcorp.MageSDK.CommandCenter.Client {
+	public enum CommandTransportType {
+		HTTP,
+		JSONRPC
+	}
 
-	public abstract void SetEndpoint(string baseUrl, string appName, Dictionary<string, string> headers = null);
-	public abstract void SerialiseBatch(CommandBatch commandBatch);
-	public abstract void SendBatch(CommandBatch batch);
+	public abstract class CommandTransportClient {
+		public Action OnSendComplete;
+		public Action<string, Exception> OnTransportError;
+
+		public abstract void SetEndpoint(string baseUrl, string appName, Dictionary<string, string> headers = null);
+		public abstract void SerialiseBatch(CommandBatch commandBatch);
+		public abstract void SendBatch(CommandBatch batch);
+	}
 }
