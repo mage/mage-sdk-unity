@@ -1,9 +1,11 @@
-﻿using System;
+using System;
 
-public class HTTPRequestException : Exception {
-	public int Status = 0;
+namespace Wizcorp.MageSDK.Network.Http {
+	public class HTTPRequestException : Exception {
+		public int Status = 0;
 
-	public HTTPRequestException(string Message, int Status) : base(Message) {
-		this.Status = Status;
+		public HTTPRequestException(string Message, int Status) : base(Message) {
+			this.Status = Status;
+		}
 	}
 }
