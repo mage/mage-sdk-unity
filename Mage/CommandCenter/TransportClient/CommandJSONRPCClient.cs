@@ -7,30 +7,42 @@ using Wizcorp.MageSDK.MageClient;
 using Wizcorp.MageSDK.MageClient.Command;
 using Wizcorp.MageSDK.Network.JsonRpc;
 
-namespace Wizcorp.MageSDK.Command.Client {
-	public class CommandJSONRPCClient : CommandTransportClient {
-		private Mage mage { get { return Mage.Instance; } }
-		private Logger logger { get { return mage.logger("CommandJSONRPCClient"); } }
+namespace Wizcorp.MageSDK.Command.Client
+{
+	public class CommandJsonRpcClient : CommandTransportClient
+	{
+		private Mage Mage
+		{
+			get { return Mage.Instance; }
+		}
 
-		private JSONRPC rpcClient = new JSONRPC();
+		private Logger Logger
+		{
+			get { return Mage.Logger("CommandJsonrpcClient"); }
+		}
+
+		private JsonRpc rpcClient = new JsonRpc();
 
 		//
-		public override void SetEndpoint(string baseUrl, string appName, Dictionary<string, string> headers = null) {
+		public override void SetEndpoint(string baseUrl, string appName, Dictionary<string, string> headers = null)
+		{
 			rpcClient.SetEndpoint(baseUrl + "/" + appName + "/jsonrpc", headers);
 		}
 
 		//
-		public override void SerialiseBatch(CommandBatch commandBatch) {
-			logger.verbose("THIS TRANSPORT CLIENT IS NOT IMPLEMENTED");
+		public override void SerialiseBatch(CommandBatch commandBatch)
+		{
+			Logger.Verbose("THIS TRANSPORT CLIENT IS NOT IMPLEMENTED");
 			throw new Exception("THIS TRANSPORT CLIENT IS NOT IMPLEMENTED");
 		}
 
 		//
-		public override void SendBatch(CommandBatch commandBatch) {
+		public override void SendBatch(CommandBatch commandBatch)
+		{
 			// NOTE: This transport client cannot be implemented yet as JSON RPC support is
 			// terminally broken in MAGE (does not support queryId and response caching).
 			// Until this is fixed, this transport client cannot be used or completed.
-			logger.verbose("THIS TRANSPORT CLIENT IS NOT IMPLEMENTED");
+			Logger.Verbose("THIS TRANSPORT CLIENT IS NOT IMPLEMENTED");
 			throw new Exception("THIS TRANSPORT CLIENT IS NOT IMPLEMENTED");
 
 			/*

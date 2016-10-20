@@ -4,39 +4,47 @@ using System.Collections.Generic;
 using Wizcorp.MageSDK.Event;
 using Wizcorp.MageSDK.Log.Writers;
 
-namespace Wizcorp.MageSDK.Log {
-	public class Logger {
+namespace Wizcorp.MageSDK.Log
+{
+	public class Logger
+	{
 		//
-		public static EventEmitter<LogEntry> logEmitter = new EventEmitter<LogEntry>();
+		public static EventEmitter<LogEntry> LogEmitter = new EventEmitter<LogEntry>();
 
 		//
-		public static Dictionary<string, LogWriter> logWriters;
-		public static void SetConfig(Dictionary<string, List<string>> config) {
+		public static Dictionary<string, LogWriter> LogWriters;
+		public static void SetConfig(Dictionary<string, List<string>> config)
+		{
 			// Destroy existing log writers
-			if (logWriters != null) {
-				foreach (var writer in logWriters.Values) {
+			if (LogWriters != null)
+			{
+				foreach (LogWriter writer in LogWriters.Values)
+				{
 					writer.Dispose();
 				}
-				logWriters = null;
+				LogWriters = null;
 			}
 
 			// Make sure we have configured something
-			if (config == null) {
+			if (config == null)
+			{
 				return;
 			}
 
 			// Create each writer with log levels
-			logWriters = new Dictionary<string, LogWriter>();
-			foreach (var property in config) {
+			LogWriters = new Dictionary<string, LogWriter>();
+			foreach (KeyValuePair<string, List<string>> property in config)
+			{
 				string writer = property.Key;
 				List<string> writerConfig = property.Value;
 
-				switch (writer) {
+				switch (writer)
+				{
 					case "console":
-						logWriters.Add(writer, new ConsoleWriter(writerConfig) as LogWriter);
+						LogWriters.Add(writer, new ConsoleWriter(writerConfig));
 						break;
 					case "server":
-						logWriters.Add(writer, new ServerWriter(writerConfig) as LogWriter);
+						LogWriters.Add(writer, new ServerWriter(writerConfig));
 						break;
 					default:
 						throw new Exception("Unknown Log Writer: " + writer);
@@ -46,54 +54,65 @@ namespace Wizcorp.MageSDK.Log {
 
 
 		//
-		private string _context;
+		private string context;
 
-		public Logger(string context) {
-			_context = context;
+		public Logger(string context)
+		{
+			this.context = context;
 		}
 
 
 		//
-		public LogEntry data(object data) {
-			return new LogEntry(_context, data);
+		public LogEntry Data(object data)
+		{
+			return new LogEntry(context, data);
 		}
 
 
 		//
-		public void verbose(string message) {
-			(new LogEntry(_context)).verbose(message);
+		public void Verbose(string message)
+		{
+			(new LogEntry(context)).Verbose(message);
 		}
 
-		public void debug(string message) {
-			(new LogEntry(_context)).debug(message);
+		public void Debug(string message)
+		{
+			(new LogEntry(context)).Debug(message);
 		}
 
-		public void info(string message) {
-			(new LogEntry(_context)).info(message);
+		public void Info(string message)
+		{
+			(new LogEntry(context)).Info(message);
 		}
 
-		public void notice(string message) {
-			(new LogEntry(_context)).notice(message);
+		public void Notice(string message)
+		{
+			(new LogEntry(context)).Notice(message);
 		}
 
-		public void warning(string message) {
-			(new LogEntry(_context)).warning(message);
+		public void Warning(string message)
+		{
+			(new LogEntry(context)).Warning(message);
 		}
 
-		public void error(string message) {
-			(new LogEntry(_context)).error(message);
+		public void Error(string message)
+		{
+			(new LogEntry(context)).Error(message);
 		}
 
-		public void critical(string message) {
-			(new LogEntry(_context)).critical(message);
+		public void Critical(string message)
+		{
+			(new LogEntry(context)).Critical(message);
 		}
 
-		public void alert(string message) {
-			(new LogEntry(_context)).alert(message);
+		public void Alert(string message)
+		{
+			(new LogEntry(context)).Alert(message);
 		}
 
-		public void emergency(string message) {
-			(new LogEntry(_context)).emergency(message);
+		public void Emergency(string message)
+		{
+			(new LogEntry(context)).Emergency(message);
 		}
 	}
 }

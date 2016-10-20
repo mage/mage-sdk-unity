@@ -3,13 +3,25 @@ using Newtonsoft.Json.Linq;
 using Wizcorp.MageSDK.Event;
 using Wizcorp.MageSDK.Log;
 
-namespace Wizcorp.MageSDK.MageClient {
-	public class EventManager : EventEmitter<JToken> {
-		private Mage mage { get { return Mage.Instance; } }
-		private Logger logger { get { return mage.logger("eventManager"); } }
+namespace Wizcorp.MageSDK.MageClient
+{
+	public class EventManager : EventEmitter<JToken>
+	{
+		private Mage Mage
+		{
+			get { return Mage.Instance; }
+		}
 
-		public void emitEventList(JArray events) {
-			foreach (JToken responseEvent in events) {
+		private Logger Logger
+		{
+			get { return Mage.Logger("eventManager"); }
+		}
+
+
+		public void EmitEventList(JArray events)
+		{
+			foreach (JToken responseEvent in events)
+			{
 				string eventTag = null;
 				JToken eventData = null;
 
@@ -17,24 +29,27 @@ namespace Wizcorp.MageSDK.MageClient {
 				JArray eventItem = JArray.Parse(responseEvent.ToString());
 
 				// Check that event name is present
-				if (eventItem.Count >= 1) {
+				if (eventItem.Count >= 1)
+				{
 					eventTag = eventItem[0].ToString();
 				}
 
 				// Check if any event data is present
-				if (eventItem.Count == 2) {
+				if (eventItem.Count == 2)
+				{
 					eventData = eventItem[1];
 				}
 
 				// Check if there were any errors, log and skip them
-				if (eventTag == null || eventItem.Count > 2) {
-					logger.data(eventItem).error("Invalid event format:");
+				if (eventTag == null || eventItem.Count > 2)
+				{
+					Logger.Data(eventItem).Error("Invalid event format:");
 					continue;
 				}
 
 				// Emit the event
-				logger.debug("Emitting '" + eventTag + "'");
-				mage.eventManager.emit(eventTag, eventData);
+				Logger.Debug("Emitting '" + eventTag + "'");
+				Mage.EventManager.Emit(eventTag, eventData);
 			}
 		}
 	}

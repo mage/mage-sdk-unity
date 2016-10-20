@@ -12,50 +12,48 @@ using System.Reflection;
 
 using UnityEngine;
 
-namespace Wizcorp.MageSDK.Network.Http {
-	public class HTTPRequest {
+namespace Wizcorp.MageSDK.Network.Http
+{
+	public class HttpRequest
+	{
 		private WWW request;
 		private CookieContainer cookies;
 		private Action<Exception, string> cb;
-		private Stopwatch timeoutTimer;
 
 		// Timeout setting for request
-		private long _timeout = 100 * 1000;
-		public long timeout {
-			get {
-				return _timeout;
-			}
-			set {
-				_timeout = value;
-			}
-		}
+		public long Timeout = 100 * 1000;
+		private Stopwatch timeoutTimer = new Stopwatch();
 
 
 		// Constructor
-		public HTTPRequest(string url, string contentType, byte[] postData, Dictionary<string, string> headers, CookieContainer cookies, Action<Exception, string> cb) {
+		public HttpRequest(string url, string contentType, byte[] postData, Dictionary<string, string> headers, CookieContainer cookies, Action<Exception, string> cb)
+		{
 			// Start timeout timer
-			timeoutTimer = new Stopwatch();
 			timeoutTimer.Start();
 
 			// Queue constructor for main thread execution
-			HTTPRequestManager.Queue(Constructor(url, contentType, postData, headers, cookies, cb));
+			HttpRequestManager.Queue(Constructor(url, contentType, postData, headers, cookies, cb));
 		}
 
 
 		// Main thread constructor
-		private IEnumerator Constructor(string url, string contentType, byte[] postData, Dictionary<string, string> headers, CookieContainer cookies, Action<Exception, string> cb) {
+		private IEnumerator Constructor(string url, string contentType, byte[] postData, Dictionary<string, string> headers, CookieContainer cookies, Action<Exception, string> cb)
+		{
 			Dictionary<string, string> headersCopy = new Dictionary<string, string>(headers);
 
 			// Set content type if provided
-			if (contentType != null) {
+			if (contentType != null)
+			{
 				headersCopy.Add("ContentType", contentType);
 			}
 
 			// Set cookies if provided
-			if (cookies != null) {
+			if (cookies != null)
+			{
 				Uri requestUri = new Uri(url);
 				string cookieString = cookies.GetCookieHeader(requestUri);
-				if (!string.IsNullOrEmpty(cookieString)) {
+				if (!string.IsNullOrEmpty(cookieString))
+				{
 					headersCopy.Add("Cookie", cookieString);
 				}
 			}
@@ -63,20 +61,23 @@ namespace Wizcorp.MageSDK.Network.Http {
 			// Setup private properties and fire off the request
 			this.cb = cb;
 			this.cookies = cookies;
-			this.request = new WWW(url, postData, headersCopy);
+			request = new WWW(url, postData, headersCopy);
 
 			// Initiate response
-			HTTPRequestManager.Queue(WaitLoop());
+			HttpRequestManager.Queue(WaitLoop());
 			yield break;
 		}
 
 
 		// Wait for www request to complete with timeout checks
-		private IEnumerator WaitLoop() {
-			while (request != null && !request.isDone) {
-				if (timeoutTimer.ElapsedMilliseconds >= timeout) {
+		private IEnumerator WaitLoop()
+		{
+			while (request != null && !request.isDone)
+			{
+				if (timeoutTimer.ElapsedMilliseconds >= Timeout)
+				{
 					// Timed out abort the request with timeout error
-					this.Abort();
+					Abort();
 					cb(new Exception("Request timed out"), null);
 					yield break;
 				}
@@ -86,7 +87,8 @@ namespace Wizcorp.MageSDK.Network.Http {
 			}
 
 			// Check if we destroyed the request due to an abort
-			if (request == null) {
+			if (request == null)
+			{
 				yield break;
 			}
 
@@ -95,18 +97,21 @@ namespace Wizcorp.MageSDK.Network.Http {
 			timeoutTimer = null;
 
 			// Check if there is a callback
-			if (cb == null) {
+			if (cb == null)
+			{
 				yield break;
 			}
 
 			// Check if there was an error with the request
-			if (request.error != null) {
-				int statusCode = 0;
-				if (request.responseHeaders.ContainsKey("STATUS")) {
+			if (request.error != null)
+			{
+				var statusCode = 0;
+				if (request.responseHeaders.ContainsKey("STATUS"))
+				{
 					statusCode = int.Parse(request.responseHeaders["STATUS"].Split(' ')[1]);
 				}
 
-				cb(new HTTPRequestException(request.error, statusCode), null);
+				cb(new HttpRequestException(request.error, statusCode), null);
 				yield break;
 			}
 
@@ -119,12 +124,15 @@ namespace Wizcorp.MageSDK.Network.Http {
 			Uri requestUri = new Uri(request.url);
 			PropertyInfo pinfoHeadersString = typeof(WWW).GetProperty("responseHeadersString", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
 
-			if (pinfoHeadersString != null) {
+			if (pinfoHeadersString != null)
+			{
 				string headersString = pinfoHeadersString.GetValue(request, null) as string;
 				string[] headerLines = headersString.Split('\n');
 
-				foreach (string headerStr in headerLines) {
-					if (headerStr.StartsWith("set-cookie:", true, null)) {
+				foreach (string headerStr in headerLines)
+				{
+					if (headerStr.StartsWith("set-cookie:", true, null))
+					{
 						cookies.SetCookies(requestUri, headerStr.Remove(0, 11));
 					}
 				}
@@ -135,13 +143,15 @@ namespace Wizcorp.MageSDK.Network.Http {
 
 
 		// Abort request
-		public void Abort() {
-			if (this.request == null) {
+		public void Abort()
+		{
+			if (this.request == null)
+			{
 				return;
 			}
 
 			WWW request = this.request;
-			this.request = null;
+			request = null;
 
 			request.Dispose();
 			timeoutTimer.Stop();
@@ -150,22 +160,30 @@ namespace Wizcorp.MageSDK.Network.Http {
 
 
 		// Create GET request and return it
-		public static HTTPRequest Get(string url, Dictionary<string, string> headers, CookieContainer cookies, Action<Exception, string> cb) {
+		public static HttpRequest Get(string url, Dictionary<string, string> headers, CookieContainer cookies, Action<Exception, string> cb)
+		{
 			// Create request and return it
 			// The callback will be called when the request is complete
-			return new HTTPRequest(url, null, null, headers, cookies, cb);
+			return new HttpRequest(url, null, null, headers, cookies, cb);
 		}
 
 		// Create POST request and return it
-		public static HTTPRequest Post(string url, string contentType, string postData, Dictionary<string, string> headers, CookieContainer cookies, Action<Exception, string> cb) {
+		public static HttpRequest Post(
+			string url, string contentType, string postData, Dictionary<string, string> headers, CookieContainer cookies,
+			Action<Exception, string> cb)
+		{
 			byte[] binaryPostData = Encoding.UTF8.GetBytes(postData);
 			return Post(url, contentType, binaryPostData, headers, cookies, cb);
 		}
 
 		// Create POST request and return it
-		public static HTTPRequest Post(string url, string contentType, byte[] postData, Dictionary<string, string> headers, CookieContainer cookies, Action<Exception, string> cb) {
-			return new HTTPRequest(url, contentType, postData, headers, cookies, cb);
+		public static HttpRequest Post(
+			string url, string contentType, byte[] postData, Dictionary<string, string> headers, CookieContainer cookies,
+			Action<Exception, string> cb)
+		{
+			return new HttpRequest(url, contentType, postData, headers, cookies, cb);
 		}
 	}
 }
+
 #endif

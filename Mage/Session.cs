@@ -1,45 +1,54 @@
 using System.Collections.Generic;
 
-using Newtonsoft.Json.Linq;
+namespace Wizcorp.MageSDK.MageClient
+{
+	public class Session
+	{
+		private Mage Mage
+		{
+			get { return Mage.Instance; }
+		}
 
-namespace Wizcorp.MageSDK.MageClient {
-	public class Session {
-		private Mage mage { get { return Mage.Instance; } }
 
 		//
 		private string sessionKey;
 		private string actorId;
 
+
 		//
-		public Session() {
-			mage.eventManager.on("session.set", (object sender, JToken session) => {
+		public Session()
+		{
+			Mage.EventManager.On("session.set", (sender, session) => {
 				actorId = session["actorId"].ToString();
 				sessionKey = session["key"].ToString();
 			});
 
-			mage.eventManager.on("session.unset", (object sender, JToken reason) => {
+			Mage.EventManager.On("session.unset", (sender, reason) => {
 				actorId = null;
 				sessionKey = null;
 			});
 
-			mage.commandCenter.preSerialiseHook += (CommandBatch commandBatch) => {
-				if (!string.IsNullOrEmpty(sessionKey)) {
+			Mage.CommandCenter.preSerialiseHook += (commandBatch) => {
+				if (!string.IsNullOrEmpty(sessionKey))
+				{
 					Dictionary<string, string> sessionHeader = new Dictionary<string, string>();
 					sessionHeader.Add("name", "mage.session");
 					sessionHeader.Add("key", sessionKey);
 
-					commandBatch.batchHeaders.Add(sessionHeader);
+					commandBatch.BatchHeaders.Add(sessionHeader);
 				}
 			};
 		}
 
 		//
-		public string GetSessionKey() {
+		public string GetSessionKey()
+		{
 			return sessionKey;
 		}
 
 		//
-		public string GetActorId() {
+		public string GetActorId()
+		{
 			return actorId;
 		}
 	}

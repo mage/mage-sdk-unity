@@ -2,104 +2,125 @@ using System;
 
 using Newtonsoft.Json.Linq;
 
-
-namespace Wizcorp.MageSDK.Tomes {
-	public class TomeValue : JValue {
+namespace Wizcorp.MageSDK.Tomes
+{
+	public class TomeValue : JValue
+	{
 		//
-		public Tome.OnChanged onChanged;
-		public Tome.OnDestroy onDestroy;
+		public Tome.OnChanged OnChanged;
+		public Tome.OnDestroy OnDestroy;
 
 		//
 		private JToken root;
 
-
 		//
-		public TomeValue(JValue value, JToken _root) : base(value) {
+		public TomeValue(JValue value, JToken root) : base(value)
+		{
 			//
-			root = _root;
-			if (root == null) {
-				root = this;
+			this.root = root;
+			if (this.root == null)
+			{
+				this.root = this;
 			}
 
 			//
-			onChanged += EmitToParents;
+			OnChanged += EmitToParents;
 		}
 
 		//
-		private void EmitToParents(JToken oldValue) {
-			if (this != root) {
+		private void EmitToParents(JToken oldValue)
+		{
+			if (!Equals(this, root))
+			{
 				Tome.EmitParentChange(Parent);
 			}
 		}
 
-
 		//
-		public void Assign(JToken newValue) {
-			lock ((object)this) {
-				switch (newValue.Type) {
+		public void Assign(JToken newValue)
+		{
+			lock ((object)this)
+			{
+				switch (newValue.Type)
+				{
 					case JTokenType.Array:
-						TomeArray newTomeArray = new TomeArray((JArray)newValue, root);
-						this.Replace(newTomeArray);
+						var newTomeArray = new TomeArray((JArray)newValue, root);
+						Replace(newTomeArray);
 
-						if (this.Parent == null) {
-							// If replace was successfuly move over event handlers and call new onChanged handler
+						if (Parent == null)
+						{
+							// If replace was successfuly move over event handlers and call new OnChanged handler
 							// The instance in which replace would not be successful, is when the old and new values are the same
-							onChanged -= EmitToParents;
-							onChanged += newTomeArray.onChanged;
-							newTomeArray.onChanged = onChanged;
-							newTomeArray.onDestroy = onDestroy;
+							OnChanged -= EmitToParents;
+							OnChanged += newTomeArray.OnChanged;
+							newTomeArray.OnChanged = OnChanged;
+							newTomeArray.OnDestroy = OnDestroy;
 
-							if (newTomeArray.onChanged != null) {
-								newTomeArray.onChanged.Invoke(null);
+							if (newTomeArray.OnChanged != null)
+							{
+								newTomeArray.OnChanged.Invoke(null);
 							}
-						} else {
-							// Otherwise call original onChanged handler
-							if (onChanged != null) {
-								onChanged.Invoke(null);
+						}
+						else
+						{
+							// Otherwise call original OnChanged handler
+							if (OnChanged != null)
+							{
+								OnChanged.Invoke(null);
 							}
 						}
 						break;
 					case JTokenType.Object:
-						TomeObject newTomeObject = new TomeObject((JObject)newValue, root);
-						this.Replace(newTomeObject);
+						var newTomeObject = new TomeObject((JObject)newValue, root);
+						Replace(newTomeObject);
 
-						if (this.Parent == null) {
-							// If replace was successfuly move over event handlers and call new onChanged handler
+						if (Parent == null)
+						{
+							// If replace was successfuly move over event handlers and call new OnChanged handler
 							// The instance in which replace would not be successful, is when the old and new values are the same
-							onChanged -= EmitToParents;
-							onChanged += newTomeObject.onChanged;
-							newTomeObject.onChanged = onChanged;
-							newTomeObject.onDestroy = onDestroy;
+							OnChanged -= EmitToParents;
+							OnChanged += newTomeObject.OnChanged;
+							newTomeObject.OnChanged = OnChanged;
+							newTomeObject.OnDestroy = OnDestroy;
 
-							if (newTomeObject.onChanged != null) {
-								newTomeObject.onChanged.Invoke(null);
+							if (newTomeObject.OnChanged != null)
+							{
+								newTomeObject.OnChanged.Invoke(null);
 							}
-						} else {
-							// Otherwise call original onChanged handler
-							if (onChanged != null) {
-								onChanged.Invoke(null);
+						}
+						else
+						{
+							// Otherwise call original OnChanged handler
+							if (OnChanged != null)
+							{
+								OnChanged.Invoke(null);
 							}
 						}
 						break;
 					default:
-						TomeValue newTomeValue = new TomeValue((JValue)newValue, root);
-						this.Replace(newTomeValue);
+						var newTomeValue = new TomeValue((JValue)newValue, root);
+						Replace(newTomeValue);
 
-						if (this.Parent == null) {
-							// If replace was successfuly move over event handlers and call new onChanged handler
+						if (Parent == null)
+						{
+							// If replace was successfuly move over event handlers and call new OnChanged handler
 							// The instance in which replace would not be successful, is when the old and new values are the same
-							onChanged -= EmitToParents;
-							onChanged += newTomeValue.onChanged;
-							newTomeValue.onChanged = onChanged;
-							newTomeValue.onDestroy = onDestroy;
+							OnChanged -= EmitToParents;
+							OnChanged += newTomeValue.OnChanged;
+							newTomeValue.OnChanged = OnChanged;
+							newTomeValue.OnDestroy = OnDestroy;
 
-							if (newTomeValue.onChanged != null) {
-								newTomeValue.onChanged.Invoke(null);
+							if (newTomeValue.OnChanged != null)
+							{
+								newTomeValue.OnChanged.Invoke(null);
 							}
-						} else {
-							// Otherwise call original onChanged handler
-							if (onChanged != null) {
-								onChanged.Invoke(null);
+						}
+						else
+						{
+							// Otherwise call original OnChanged handler
+							if (OnChanged != null)
+							{
+								OnChanged.Invoke(null);
 							}
 						}
 						break;
@@ -108,22 +129,27 @@ namespace Wizcorp.MageSDK.Tomes {
 		}
 
 		//
-		public void Destroy() {
-			lock ((object)this) {
-				if (onDestroy != null) {
-					onDestroy.Invoke();
+		public void Destroy()
+		{
+			lock ((object)this)
+			{
+				if (OnDestroy != null)
+				{
+					OnDestroy.Invoke();
 				}
 
-				onChanged = null;
-				onDestroy = null;
+				OnChanged = null;
+				OnDestroy = null;
 			}
 		}
 
-
 		//
-		public void ApplyOperation(string op, JToken val) {
-			lock ((object)this) {
-				switch (op) {
+		public void ApplyOperation(string op, JToken val)
+		{
+			lock ((object)this)
+			{
+				switch (op)
+				{
 					case "assign":
 						Assign(val);
 						break;

@@ -1,105 +1,130 @@
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Threading;
 
 using Wizcorp.MageSDK.Log;
 using Wizcorp.MageSDK.Network.Http;
 
-namespace Wizcorp.MageSDK.MageClient.Message.Client {
-	public class ShortPolling : TransportClient {
-		private Mage mage { get { return Mage.Instance; } }
-		private Logger logger { get { return mage.logger("shortpolling"); } }
+namespace Wizcorp.MageSDK.MageClient.Message.Client
+{
+	public class ShortPolling : TransportClient
+	{
+		private static Mage Mage
+		{
+			get { return Mage.Instance; }
+		}
 
-		// Whether or not the poller is working
-		private bool _running = false;
+		private static Logger Logger
+		{
+			get { return Mage.Logger("shortpolling"); }
+		}
 
 		// Required functions for poll requests
-		private Func<string> _getEndpoint;
-		private Func<Dictionary<string, string>> _getHeaders;
-		private Action<string> _processMessages;
+		private Func<string> getEndpoint;
+		private Func<Dictionary<string, string>> getHeaders;
+		private Action<string> processMessages;
 
 		// Required interval timer for polling delay
-		private int _requestInterval;
-		private int _errorInterval;
-		private Timer _intervalTimer;
+		private int requestInterval;
+		private int errorInterval;
+		private Timer intervalTimer;
 
 
 		// Constructor
-		public ShortPolling(Func<string> getEndpointFn, Func<Dictionary<string, string>> getHeadersFn, Action<string> processMessagesFn, int requestInterval = 5000, int errorInterval = 5000) {
-			_getEndpoint = getEndpointFn;
-			_getHeaders = getHeadersFn;
-			_processMessages = processMessagesFn;
-			_requestInterval = requestInterval;
-			_errorInterval = errorInterval;
+		public ShortPolling(Func<string> getEndpointFn, Func<Dictionary<string, string>> getHeadersFn, Action<string> processMessagesFn, int requestInterval = 5000, int errorInterval = 5000)
+		{
+			getEndpoint = getEndpointFn;
+			getHeaders = getHeadersFn;
+			processMessages = processMessagesFn;
+			this.requestInterval = requestInterval;
+			this.errorInterval = errorInterval;
 		}
 
 
 		// Starts the poller
-		public override void start() {
-			if (_running == true) {
+		public override void Start()
+		{
+			if (_running)
+			{
 				return;
 			}
 
-			logger.debug("Starting");
+			Logger.Debug("Starting");
 			_running = true;
-			requestLoop();
+			RequestLoop();
 		}
 
 
 		// Stops the poller
-		public override void stop() {
-			if (_intervalTimer != null) {
-				_intervalTimer.Dispose();
-				_intervalTimer = null;
-				logger.debug("Stopped");
-			} else {
-				logger.debug("Stopping...");
+		public override void Stop()
+		{
+			if (intervalTimer != null)
+			{
+				intervalTimer.Dispose();
+				intervalTimer = null;
+				Logger.Debug("Stopped");
+			}
+			else
+			{
+				Logger.Debug("Stopping...");
 			}
 			_running = false;
 		}
 
 
 		// Queues the next poll request
-		private void queueNextRequest(int waitFor) {
-			// Wait _requestInterval milliseconds till next poll
-			_intervalTimer = new Timer((object state) => {
-				requestLoop();
-			}, null, waitFor, Timeout.Infinite);
+		private void QueueNextRequest(int waitFor)
+		{
+			// Wait n milliseconds till next poll
+			intervalTimer = new Timer(
+				state => {
+					RequestLoop();
+				},
+				null,
+				waitFor,
+				Timeout.Infinite
+			);
 		}
 
 
 		// Poller request function
-		private void requestLoop() {
+		private void RequestLoop()
+		{
 			// Clear the timer
-			if (_intervalTimer != null) {
-				_intervalTimer.Dispose();
-				_intervalTimer = null;
+			if (intervalTimer != null)
+			{
+				intervalTimer.Dispose();
+				intervalTimer = null;
 			}
 
 			// Check if the poller should be running
-			if (_running == false) {
-				logger.debug("Stopped");
+			if (_running == false)
+			{
+				Logger.Debug("Stopped");
 				return;
 			}
 
 			// Send poll request and wait for a response
-			string endpoint = _getEndpoint();
-			logger.debug("Sending request: " + endpoint);
-			HTTPRequest.Get(endpoint, _getHeaders(), mage.cookies, (Exception requestError, string responseString) => {
-				if (requestError != null) {
-					logger.error(requestError.ToString());
-					queueNextRequest(_errorInterval);
+			string endpoint = getEndpoint();
+			Logger.Debug("Sending request: " + endpoint);
+			HttpRequest.Get(endpoint, getHeaders(), Mage.Cookies, (requestError, responseString) => {
+				if (requestError != null)
+				{
+					Logger.Error(requestError.ToString());
+					QueueNextRequest(errorInterval);
 					return;
 				}
 
 				// Call the message processer hook and queue the next request
-				try {
-					_processMessages(responseString);
-					queueNextRequest(_requestInterval);
-				} catch (Exception error) {
-					logger.data(responseString).error(error.ToString());
-					queueNextRequest(_errorInterval);
+				try
+				{
+					processMessages(responseString);
+					QueueNextRequest(requestInterval);
+				}
+				catch (Exception error)
+				{
+					Logger.Data(responseString).Error(error.ToString());
+					QueueNextRequest(errorInterval);
 				}
 			});
 		}

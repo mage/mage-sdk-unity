@@ -3,13 +3,10 @@ using System.Collections.Generic;
 
 using Wizcorp.MageSDK.MageClient.Command;
 
-namespace Wizcorp.MageSDK.CommandCenter.Client {
-	public enum CommandTransportType {
-		HTTP,
-		JSONRPC
-	}
-
-	public abstract class CommandTransportClient {
+namespace Wizcorp.MageSDK.CommandCenter.Client
+{
+	public abstract class CommandTransportClient
+	{
 		public Action OnSendComplete;
 		public Action<string, Exception> OnTransportError;
 
