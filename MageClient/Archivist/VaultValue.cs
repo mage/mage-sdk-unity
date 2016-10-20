@@ -8,16 +8,12 @@ namespace Wizcorp.MageSDK.MageClient
 {
 	public class VaultValue
 	{
+		//
 		public string Topic { get; private set; }
-
 		public JObject Index { get; private set; }
-
 		public JToken Data { get; private set; }
-
 		public string MediaType { get; private set; }
-
 		public int? ExpirationTime { get; private set; }
-
 		public DateTime WrittenAt { get; private set; }
 
 		//

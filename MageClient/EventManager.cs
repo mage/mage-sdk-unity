@@ -17,6 +17,7 @@ namespace Wizcorp.MageSDK.MageClient
 			get { return Mage.Logger("eventManager"); }
 		}
 
+
 		public void EmitEventList(JArray events)
 		{
 			foreach (JToken responseEvent in events)

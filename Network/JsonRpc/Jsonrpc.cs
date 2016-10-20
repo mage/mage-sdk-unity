@@ -1,7 +1,6 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Net;
-using System.Text;
 
 using Newtonsoft.Json.Linq;
 
@@ -9,18 +8,16 @@ using Wizcorp.MageSDK.Network.Http;
 
 namespace Wizcorp.MageSDK.Network.JsonRpc
 {
-	public class Jsonrpc
+	public class JsonRpc
 	{
 		// Endpoint and Basic Authentication
 		private string endpoint;
-		private string password = null;
-		private string username = null;
+		private Dictionary<string, string> headers;
 
-		public void SetEndpoint(string endpoint, string username = null, string password = null)
+		public void SetEndpoint(string endpoint, Dictionary<string, string> headers = null)
 		{
 			this.endpoint = endpoint;
-			this.username = username;
-			this.password = password;
+			this.headers = new Dictionary<string, string>(headers);
 		}
 
 		public void Call(string methodName, JObject parameters, Dictionary<string, string> headers, CookieContainer cookies, Action<Exception, JObject> cb)
@@ -84,7 +81,7 @@ namespace Wizcorp.MageSDK.Network.JsonRpc
 			});
 		}
 
-		public void CallBatch(JsonrpcBatch rpcBatch, Dictionary<string, string> headers, CookieContainer cookies, Action<Exception, JArray> cb)
+		public void CallBatch(JsonRpcBatch rpcBatch, Dictionary<string, string> headers, CookieContainer cookies, Action<Exception, JArray> cb)
 		{
 			// Serialize JSON request object into string
 			string postData;
@@ -132,16 +129,19 @@ namespace Wizcorp.MageSDK.Network.JsonRpc
 			}
 
 			// Make a copy of the provided headers and add additional required headers
-			var _headers = new Dictionary<string, string>(headers);
-			if (username != null && password != null)
+			Dictionary<string, string> finalHeaders = new Dictionary<string, string>(this.headers);
+			foreach (var header in headers)
 			{
-				string authInfo = username + ":" + password;
-				string encodedAuth = Convert.ToBase64String(Encoding.Default.GetBytes(authInfo));
-				_headers.Add("Authorization", "Basic " + encodedAuth);
+				if (finalHeaders.ContainsKey(header.Key))
+				{
+					continue;
+				}
+
+				finalHeaders.Add(header.Key, header.Value);
 			}
 
 			// Send HTTP post to JSON rpc endpoint
-			HttpRequest.Post(endpoint, "application/json", postData, _headers, cookies, cb);
+			HttpRequest.Post(endpoint, "application/json", postData, finalHeaders, cookies, cb);
 		}
 	}
 }

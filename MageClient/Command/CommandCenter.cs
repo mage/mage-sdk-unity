@@ -1,4 +1,5 @@
-﻿using System;
+using System;
+using System.Collections.Generic;
 
 using Newtonsoft.Json.Linq;
 
@@ -20,20 +21,23 @@ namespace Wizcorp.MageSDK.MageClient.Command
 			get { return Mage.Logger("CommandCenter"); }
 		}
 
-		private string appName;
-
 		// Endpoint and credentials
 		private string baseUrl;
-		private CommandBatch currentBatch;
+		private string appName;
+		private Dictionary<string, string> headers = new Dictionary<string, string>();
 
-		// Command Batches
-		private int nextQueryId = 1;
-		private string password;
-		private CommandBatch sendingBatch;
+		// Message Hooks
+		public delegate void MessageHook(CommandBatch commandBatch);
+		public MessageHook preSerialiseHook;
+		public MessageHook preNetworkHook;
 
 		// Current transport client
 		private CommandTransportClient transportClient;
-		private string username;
+
+		// Command Batches
+		private int nextQueryId = 1;
+		private CommandBatch currentBatch;
+		private CommandBatch sendingBatch;
 
 		//
 		public CommandCenter(CommandTransportType transportType = CommandTransportType.HTTP)
@@ -52,12 +56,12 @@ namespace Wizcorp.MageSDK.MageClient.Command
 			if (transportType == CommandTransportType.HTTP)
 			{
 				transportClient = new CommandHttpClient();
-				transportClient.SetEndpoint(baseUrl, appName, username, password);
+				transportClient.SetEndpoint(baseUrl, appName, headers);
 			}
 			else if (transportType == CommandTransportType.JSONRPC)
 			{
-				transportClient = new CommandJsonrpcClient();
-				transportClient.SetEndpoint(baseUrl, appName, username, password);
+				transportClient = new CommandJsonRpcClient();
+				transportClient.SetEndpoint(baseUrl, appName, headers);
 			}
 			else
 			{
@@ -70,16 +74,15 @@ namespace Wizcorp.MageSDK.MageClient.Command
 		}
 
 		//
-		public void SetEndpoint(string url, string app, string login = null, string pass = null)
+		public void SetEndpoint(string baseUrl, string appName, Dictionary<string, string> headers = null)
 		{
-			baseUrl = url;
-			appName = app;
-			username = login;
-			password = pass;
+			this.baseUrl = baseUrl;
+			this.appName = appName;
+			this.headers = new Dictionary<string, string>(headers);
 
 			if (transportClient != null)
 			{
-				transportClient.SetEndpoint(baseUrl, appName, username, password);
+				transportClient.SetEndpoint(this.baseUrl, this.appName, this.headers);
 			}
 		}
 
@@ -93,6 +96,22 @@ namespace Wizcorp.MageSDK.MageClient.Command
 				// Swap batches around locking the queue
 				sendingBatch = currentBatch;
 				currentBatch = new CommandBatch(nextQueryId++);
+
+				// Execute pre-serialisation message hooks
+				if (preSerialiseHook != null)
+				{
+					preSerialiseHook.Invoke(sendingBatch);
+				}
+
+				// Serialise the batch
+				Logger.Debug("Serialising batch: " + sendingBatch.QueryId);
+				transportClient.SerialiseBatch(sendingBatch);
+
+				// Execute pre-network message hooks
+				if (preNetworkHook != null)
+				{
+					preNetworkHook.Invoke(sendingBatch);
+				}
 
 				// Send the batch
 				Logger.Debug("Sending batch: " + sendingBatch.QueryId);
@@ -149,24 +168,6 @@ namespace Wizcorp.MageSDK.MageClient.Command
 
 				// Otherwise send the batch
 				SendBatch();
-			}
-		}
-
-		// Either send this command immediately if nothing is being sent,
-		// otherwise queue it and send it after the current send is complete.
-		public void QueueCommand(string commandName, JObject parameters, Action<Exception, JToken> cb)
-		{
-			lock ((object)this)
-			{
-				// If we are not sending anything, send immediately
-				if (sendingBatch == null)
-				{
-					SendCommand(commandName, parameters, cb);
-					return;
-				}
-
-				// Otherwise queue it to current
-				currentBatch.Queue(commandName, parameters, cb);
 			}
 		}
 

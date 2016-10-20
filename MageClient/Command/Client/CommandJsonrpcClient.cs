@@ -1,4 +1,5 @@
-﻿using System;
+using System;
+using System.Collections.Generic;
 
 using Wizcorp.MageSDK.CommandCenter.Client;
 using Wizcorp.MageSDK.Log;
@@ -8,7 +9,7 @@ using Wizcorp.MageSDK.Network.JsonRpc;
 
 namespace Wizcorp.MageSDK.Command.Client
 {
-	public class CommandJsonrpcClient : CommandTransportClient
+	public class CommandJsonRpcClient : CommandTransportClient
 	{
 		private Mage Mage
 		{
@@ -17,16 +18,22 @@ namespace Wizcorp.MageSDK.Command.Client
 
 		private Logger Logger
 		{
-			get { return Mage.Logger("CommandJSONRPCClient"); }
+			get { return Mage.Logger("CommandJsonrpcClient"); }
 		}
 
-		private Jsonrpc rpcClient = new Jsonrpc();
+		private JsonRpc rpcClient = new JsonRpc();
 
 		//
-		public override void SetEndpoint(string url, string app, string login = null, string pass = null)
+		public override void SetEndpoint(string baseUrl, string appName, Dictionary<string, string> headers = null)
 		{
-			string baseUrl = string.Format("{0}/{1}/jsonrpc", url, app);
-			rpcClient.SetEndpoint(baseUrl, login, pass);
+			rpcClient.SetEndpoint(baseUrl + "/" + appName + "/jsonrpc", headers);
+		}
+
+		//
+		public override void SerialiseBatch(CommandBatch commandBatch)
+		{
+			Logger.Verbose("THIS TRANSPORT CLIENT IS NOT IMPLEMENTED");
+			throw new Exception("THIS TRANSPORT CLIENT IS NOT IMPLEMENTED");
 		}
 
 		//
@@ -39,55 +46,55 @@ namespace Wizcorp.MageSDK.Command.Client
 			throw new Exception("THIS TRANSPORT CLIENT IS NOT IMPLEMENTED");
 
 			/*
-				JSONRPCBatch rpcBatch = new JSONRPCBatch();
-				for (int batchId = 0; batchId < commandBatch.batchItems.Count; batchId += 1) {
+			JSONRPCBatch rpcBatch = new JSONRPCBatch();
+			for (int batchId = 0; batchId < commandBatch.batchItems.Count; batchId += 1) {
+				CommandBatchItem commandItem = commandBatch.batchItems[batchId];
+				rpcBatch.Add(batchId, commandItem.commandName, commandItem.parameters);
+				logger.data(commandItem.parameters).verbose("[" + commandItem.commandName + "] executing command");
+			}
+
+			// Attach any required mage headers
+			Dictionary<string, string> headers = new Dictionary<string, string>();
+
+			string sessionKey = mage.session.GetSessionKey();
+			if (!string.IsNullOrEmpty(sessionKey)) {
+				headers.Add("X-MAGE-SESSION", sessionKey);
+			}
+
+			// Send rpc batch
+			rpcClient.CallBatch(rpcBatch, headers, mage.cookies, (Exception error, JArray responseArray) => {
+				logger.data(responseArray).verbose("Recieved response: ");
+
+				if (error != null) {
+					//TODO: OnTransportError.Invoke("", error);
+					return;
+				}
+
+				// Process each command response
+				foreach (JObject responseObject in responseArray) {
+					int batchId = (int)responseObject["id"];
 					CommandBatchItem commandItem = commandBatch.batchItems[batchId];
-					rpcBatch.Add(batchId, commandItem.commandName, commandItem.parameters);
-					logger.data(commandItem.parameters).verbose("[" + commandItem.commandName + "] executing command");
-				}
+					string commandName = commandItem.commandName;
+					Action<Exception, JToken> commandCb = commandItem.cb;
 
-				// Attach any required mage headers
-				Dictionary<string, string> headers = new Dictionary<string, string>();
+					// Check if there are any events attached to this request
+					if (responseObject["result"]["myEvents"] != null) {
+						logger.verbose("[" + commandName + "] processing events");
+						mage.eventManager.emitEventList((JArray)responseObject["result"]["myEvents"]);
+					}
 
-				string sessionKey = mage.session.GetSessionKey();
-				if (!string.IsNullOrEmpty(sessionKey)) {
-					headers.Add("X-MAGE-SESSION", sessionKey);
-				}
-
-				// Send rpc batch
-				rpcClient.CallBatch(rpcBatch, headers, mage.cookies, (Exception error, JArray responseArray) => {
-					logger.data(responseArray).verbose("Recieved response: ");
-
-					if (error != null) {
-						//TODO: OnTransportError.Invoke("", error);
+					// Check if the response was an error
+					if (responseObject["result"]["errorCode"] != null) {
+						logger.verbose("[" + commandName + "] server error");
+						commandCb(new Exception(responseObject["result"]["errorCode"].ToString()), null);
 						return;
 					}
 
-					// Process each command response
-					foreach (JObject responseObject in responseArray) {
-						int batchId = (int)responseObject["id"];
-						CommandBatchItem commandItem = commandBatch.batchItems[batchId];
-						string commandName = commandItem.commandName;
-						Action<Exception, JToken> commandCb = commandItem.cb;
-
-						// Check if there are any events attached to this request
-						if (responseObject["result"]["myEvents"] != null) {
-							logger.verbose("[" + commandName + "] processing events");
-							mage.eventManager.emitEventList((JArray)responseObject["result"]["myEvents"]);
-						}
-
-						// Check if the response was an error
-						if (responseObject["result"]["errorCode"] != null) {
-							logger.verbose("[" + commandName + "] server error");
-							commandCb(new Exception(responseObject["result"]["errorCode"].ToString()), null);
-							return;
-						}
-
-						// Pull off call result object, if it doesn't exist
-						logger.verbose("[" + commandName + "] call response");
-						commandCb(null, responseObject["result"]["response"]);
-					}
-				});
+					// Pull off call result object, if it doesn't exist
+					logger.verbose("[" + commandName + "] call response");
+					commandCb(null, responseObject["result"]["response"]);
+				}
+			});
 			*/
 		}
 	}

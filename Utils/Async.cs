@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 
 namespace Wizcorp.MageSDK.Utils
@@ -12,7 +12,7 @@ namespace Wizcorp.MageSDK.Utils
 	/// </summary>
 	public static class Async
 	{
-		public static void Each<T>(List<T> items, Action<T, Action<Exception>> actionItem, Action<Exception> callback)
+		public static void Each<T>(List<T> items, Action<T, Action<Exception>> action, Action<Exception> callback)
 		{
 			if (items == null || items.Count == 0)
 			{
@@ -20,17 +20,17 @@ namespace Wizcorp.MageSDK.Utils
 				return;
 			}
 
-			var currentItem = 0;
+			var currentItemI = 0;
 			Action iterate = null;
 			iterate = () => {
-				if (currentItem >= items.Count)
+				if (currentItemI >= items.Count)
 				{
 					callback(null);
 					return;
 				}
 
 				// Execute the given function on this item
-				actionItem(items[currentItem], error => {
+				action(items[currentItemI], error => {
 					// Stop iteration if there was an error
 					if (error != null)
 					{
@@ -39,7 +39,7 @@ namespace Wizcorp.MageSDK.Utils
 					}
 
 					// Continue to next item
-					currentItem++;
+					currentItemI++;
 					iterate();
 				});
 			};
@@ -48,29 +48,29 @@ namespace Wizcorp.MageSDK.Utils
 			iterate();
 		}
 
-		public static void Series(List<Action<Action<Exception>>> actionItems, Action<Exception> callback)
+		public static void Series(List<Action<Action<Exception>>> actions, Action<Exception> callback)
 		{
-			bool isEmpty = actionItems == null || actionItems.Count == 0;
+			bool isEmpty = actions == null || actions.Count == 0;
 			if (isEmpty)
 			{
 				callback(null);
 				return;
 			}
 
-			var currentItem = 0;
+			var currentActionI = 0;
 			Action iterate = null;
 			iterate = () => {
-				if (currentItem >= actionItems.Count)
+				if (currentActionI >= actions.Count)
 				{
 					callback(null);
 					return;
 				}
 
 				// Shift an element from the list
-				Action<Action<Exception>> actionItem = actionItems[currentItem];
+				Action<Action<Exception>> action = actions[currentActionI];
 
 				// Execute the given function on this item
-				actionItem(error => {
+				action(error => {
 					// Stop iteration if there was an error
 					if (error != null)
 					{
@@ -79,7 +79,7 @@ namespace Wizcorp.MageSDK.Utils
 					}
 
 					// Continue to next item
-					currentItem++;
+					currentActionI++;
 					iterate();
 				});
 			};

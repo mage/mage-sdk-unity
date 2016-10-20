@@ -1,4 +1,4 @@
-﻿namespace Wizcorp.MageSDK.Editor
+namespace Wizcorp.MageSDK.Unity
 {
 	public enum EditorPlayModeState
 	{

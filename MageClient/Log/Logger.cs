@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 
 using Wizcorp.MageSDK.Event;
@@ -13,15 +13,6 @@ namespace Wizcorp.MageSDK.Log
 
 		//
 		public static Dictionary<string, LogWriter> LogWriters;
-
-		//
-		private string context;
-
-		public Logger(string context)
-		{
-			this.context = context;
-		}
-
 		public static void SetConfig(Dictionary<string, List<string>> config)
 		{
 			// Destroy existing log writers
@@ -59,6 +50,15 @@ namespace Wizcorp.MageSDK.Log
 						throw new Exception("Unknown Log Writer: " + writer);
 				}
 			}
+		}
+
+
+		//
+		private string context;
+
+		public Logger(string context)
+		{
+			this.context = context;
 		}
 
 

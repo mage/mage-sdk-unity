@@ -2,14 +2,13 @@
 
 using UnityEditor;
 
-namespace Wizcorp.MageSDK.Editor
+namespace Wizcorp.MageSDK.Unity
 {
 	[InitializeOnLoad]
 	public static class UnityEditorPlayMode
 	{
-		public delegate void EditorModeChanged(EditorPlayModeState newState);
-
 		private static EditorPlayModeState currentState = EditorPlayModeState.Stopped;
+		public delegate void EditorModeChanged(EditorPlayModeState newState);
 		public static EditorModeChanged OnEditorModeChanged;
 
 		static UnityEditorPlayMode()

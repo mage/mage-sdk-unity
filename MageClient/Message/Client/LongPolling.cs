@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Threading;
 
@@ -18,9 +18,6 @@ namespace Wizcorp.MageSDK.MageClient.Message.Client
 		{
 			get { return Mage.Logger("longpolling"); }
 		}
-
-		// Whether or not the poller is working
-		private bool running;
 
 		// Required functions for poll requests
 		private Func<string> getEndpoint;
@@ -48,13 +45,13 @@ namespace Wizcorp.MageSDK.MageClient.Message.Client
 		// Starts the poller
 		public override void Start()
 		{
-			if (running)
+			if (_running)
 			{
 				return;
 			}
 
 			Logger.Debug("Starting");
-			running = true;
+			_running = true;
 			RequestLoop();
 		}
 
@@ -62,7 +59,7 @@ namespace Wizcorp.MageSDK.MageClient.Message.Client
 		// Stops the poller
 		public override void Stop()
 		{
-			running = false;
+			_running = false;
 			Logger.Debug("Stopping...");
 
 			if (intervalTimer != null)
@@ -97,7 +94,8 @@ namespace Wizcorp.MageSDK.MageClient.Message.Client
 				},
 				null,
 				waitFor,
-				Timeout.Infinite);
+				Timeout.Infinite
+			);
 		}
 
 
@@ -112,7 +110,7 @@ namespace Wizcorp.MageSDK.MageClient.Message.Client
 			}
 
 			// Check if the poller should be running
-			if (running == false)
+			if (_running == false)
 			{
 				Logger.Debug("Stopped");
 				return;
@@ -125,7 +123,7 @@ namespace Wizcorp.MageSDK.MageClient.Message.Client
 				currentRequest = null;
 
 				// Ignore errors if we have been stopped
-				if (requestError != null && !running)
+				if (requestError != null && !_running)
 				{
 					Logger.Debug("Stopped");
 					return;
@@ -133,14 +131,13 @@ namespace Wizcorp.MageSDK.MageClient.Message.Client
 
 				if (requestError != null)
 				{
-					var exception = requestError as HttpRequestException;
-					if (exception != null)
+					var requestHttpError = requestError as HttpRequestException;
+					if (requestHttpError != null)
 					{
 						// Only log web exceptions if they aren't an empty response or gateway timeout
-						HttpRequestException requestException = exception;
-						if (requestException.Status != 0 && requestException.Status != 504)
+						if (requestHttpError.Status != 0 && requestHttpError.Status != 504)
 						{
-							Logger.Error("(" + requestException.Status.ToString() + ") " + exception.Message);
+							Logger.Error("(" + requestHttpError.Status.ToString() + ") " + requestHttpError.Message);
 						}
 					}
 					else

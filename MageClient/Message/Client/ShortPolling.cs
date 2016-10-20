@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Threading;
 
@@ -18,9 +18,6 @@ namespace Wizcorp.MageSDK.MageClient.Message.Client
 		{
 			get { return Mage.Logger("shortpolling"); }
 		}
-
-		// Whether or not the poller is working
-		private bool running;
 
 		// Required functions for poll requests
 		private Func<string> getEndpoint;
@@ -47,13 +44,13 @@ namespace Wizcorp.MageSDK.MageClient.Message.Client
 		// Starts the poller
 		public override void Start()
 		{
-			if (running)
+			if (_running)
 			{
 				return;
 			}
 
 			Logger.Debug("Starting");
-			running = true;
+			_running = true;
 			RequestLoop();
 		}
 
@@ -71,21 +68,22 @@ namespace Wizcorp.MageSDK.MageClient.Message.Client
 			{
 				Logger.Debug("Stopping...");
 			}
-			running = false;
+			_running = false;
 		}
 
 
 		// Queues the next poll request
 		private void QueueNextRequest(int waitFor)
 		{
-			// Wait _requestInterval milliseconds till next poll
+			// Wait n milliseconds till next poll
 			intervalTimer = new Timer(
 				state => {
 					RequestLoop();
 				},
 				null,
 				waitFor,
-				Timeout.Infinite);
+				Timeout.Infinite
+			);
 		}
 
 
@@ -100,7 +98,7 @@ namespace Wizcorp.MageSDK.MageClient.Message.Client
 			}
 
 			// Check if the poller should be running
-			if (running == false)
+			if (_running == false)
 			{
 				Logger.Debug("Stopped");
 				return;
@@ -109,7 +107,7 @@ namespace Wizcorp.MageSDK.MageClient.Message.Client
 			// Send poll request and wait for a response
 			string endpoint = getEndpoint();
 			Logger.Debug("Sending request: " + endpoint);
-			HttpRequest.Get(endpoint, getHeaders(), Mage.Cookies, (requestError, responseString) => {
+            HttpRequest.Get(endpoint, getHeaders(), Mage.Cookies, (requestError, responseString) => {
 				if (requestError != null)
 				{
 					Logger.Error(requestError.ToString());

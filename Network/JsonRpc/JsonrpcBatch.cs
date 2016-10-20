@@ -1,8 +1,8 @@
-﻿using Newtonsoft.Json.Linq;
+using Newtonsoft.Json.Linq;
 
 namespace Wizcorp.MageSDK.Network.JsonRpc
 {
-	public abstract class JsonrpcBatch
+	public class JsonRpcBatch
 	{
 		public JArray Batch = new JArray();
 

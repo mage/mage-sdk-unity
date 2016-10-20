@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Reflection;
@@ -7,44 +7,30 @@ using System.Net;
 using Wizcorp.MageSDK.Log;
 using Wizcorp.MageSDK.MageClient.Message;
 using Wizcorp.MageSDK.Network.Http;
+using Wizcorp.MageSDK.Unity;
 using Wizcorp.MageSDK.Utils;
 
 namespace Wizcorp.MageSDK.MageClient
 {
 	public class Mage : Singleton<Mage>
 	{
-		private string appName;
-		public Archivist Archivist;
-
-		//
-		private string baseUrl;
-		public Command.CommandCenter CommandCenter;
-		public CookieContainer Cookies;
-
 		//
 		public EventManager EventManager;
+		public Session Session;
+		public Command.CommandCenter CommandCenter;
+		public MessageStream MessageStream;
+		public Archivist Archivist;
+
 		private Logger logger;
 
 		//
+		private string baseUrl;
+		private string appName;
+		private Dictionary<string, string> headers;
+		public CookieContainer Cookies;
+
+		//
 		private Dictionary<string, Logger> loggers = new Dictionary<string, Logger>();
-		public MessageStream MessageStream;
-		private string password;
-		public Session Session;
-		private string username;
-
-
-		// Avoid putting setup logic in the contstuctor. Only things that can be
-		// carried between game sessions should go here. Otherwise we need to be
-		// able to re-initialize them inside the setup function.
-		public Mage()
-		{
-			// Setup log writters
-			logger = Logger("mage");
-
-			// TODO: properly check the damn certificate, for now ignore invalid ones (fix issue on Android/iOS)
-			ServicePointManager.ServerCertificateValidationCallback += (o, cert, chain, errors) => true;
-		}
-
 		public Logger Logger(string context = null)
 		{
 			if (string.IsNullOrEmpty(context))
@@ -62,22 +48,34 @@ namespace Wizcorp.MageSDK.MageClient
 			return newLogger;
 		}
 
-		//
-		public void SetEndpoints(string url, string app, string login = null, string pass = null)
+
+		// Avoid putting setup logic in the contstuctor. Only things that can be
+		// carried between game sessions should go here. Otherwise we need to be
+		// able to re-initialize them inside the setup function.
+		public Mage()
 		{
-			baseUrl = url;
-			appName = app;
-			username = login;
-			password = pass;
+			// Setup log writters
+			logger = Logger("mage");
+
+			// TODO: properly check the damn certificate, for now ignore invalid ones (fix issue on Android/iOS)
+			ServicePointManager.ServerCertificateValidationCallback += (o, cert, chain, errors) => true;
+		}
+
+		//
+		public void SetEndpoints(string baseUrl, string appName, Dictionary<string, string> headers = null)
+		{
+			this.baseUrl = baseUrl;
+			this.appName = appName;
+			this.headers = new Dictionary<string, string>(headers);
 
 			if (CommandCenter != null)
 			{
-				CommandCenter.SetEndpoint(baseUrl, appName, login, password);
+				CommandCenter.SetEndpoint(baseUrl, appName, this.headers);
 			}
 
 			if (MessageStream != null)
 			{
-				MessageStream.SetEndpoint(baseUrl, login, password);
+				MessageStream.SetEndpoint(baseUrl, this.headers);
 			}
 		}
 
@@ -91,22 +89,27 @@ namespace Wizcorp.MageSDK.MageClient
 			}
 
 
-			// Instantiate HTTPRequestManager
+			// Instantiate Singletons
+			UnityApplicationState.Instantiate();
 			HttpRequestManager.Instantiate();
+
 
 			// Create a shared cookie container
 			Cookies = new CookieContainer();
 
+
 			// Initialize mage internal modules
 			EventManager = new EventManager();
-			Session = new Session();
 			CommandCenter = new Command.CommandCenter();
 			MessageStream = new MessageStream();
+
+			Session = new Session();
 			Archivist = new Archivist();
 
+
 			// Set endpoints
-			CommandCenter.SetEndpoint(baseUrl, appName, username, password);
-			MessageStream.SetEndpoint(baseUrl, username, password);
+			CommandCenter.SetEndpoint(baseUrl, appName, headers);
+			MessageStream.SetEndpoint(baseUrl, headers);
 
 			cb(null);
 		}
@@ -132,8 +135,8 @@ namespace Wizcorp.MageSDK.MageClient
 							BindingFlags publicMethod = BindingFlags.Public | BindingFlags.InvokeMethod;
 
 							// Grab module instance from singleton base
-							Type singletonType = typeof(Singleton<>).MakeGenericType(t);
-							object instance = singletonType.InvokeMember("Instance", staticProperty, null, null, null);
+							var singletonType = typeof(Singleton<>).MakeGenericType(t);
+							Object instance = singletonType.InvokeMember("Instance", staticProperty, null, null, null);
 
 							// Setup module
 							Type moduleType = typeof(Module<>).MakeGenericType(t);
@@ -167,7 +170,8 @@ namespace Wizcorp.MageSDK.MageClient
 									// Invoke the setup method on the module
 									Logger(moduleName).Info("Executing setup function");
 									t1.InvokeMember("Setup", publicMethod, null, instance, new object[] { callback });
-								});
+								}
+							);
 
 							return;
 						}
@@ -186,7 +190,8 @@ namespace Wizcorp.MageSDK.MageClient
 
 					logger.Info("Setup complete");
 					cb(null);
-				});
+				}
+			);
 		}
 
 

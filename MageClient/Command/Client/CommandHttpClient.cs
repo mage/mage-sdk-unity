@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Net;
 using System.Text;
@@ -22,85 +22,106 @@ namespace Wizcorp.MageSDK.Command.Client
 
 		private Logger Logger
 		{
-			get { return Mage.Logger("CommandHTTPClient"); }
+			get { return Mage.Logger("CommandHttpClient"); }
 		}
 
 		//
 		private string endpoint;
-		private string password;
-		private string username;
+		private Dictionary<string, string> headers;
 
 		//
-		public override void SetEndpoint(string url, string app, string login = null, string pass = null)
+		public override void SetEndpoint(string baseUrl, string appName, Dictionary<string, string> headers = null)
 		{
-			endpoint = string.Format("{0}/{1}", url, app);
-			username = login;
-			password = pass;
+			endpoint = baseUrl + "/" + appName;
+			headers = new Dictionary<string, string>(headers);
 		}
 
 		//
-		public override void SendBatch(CommandBatch commandBatch)
+		public override void SerialiseBatch(CommandBatch commandBatch)
 		{
-			var commands = new List<string>();
-			var data = new List<string>();
+			List<string> commands = new List<string>();
+			List<string> data = new List<string>();
 
 			// Attach batch headers to post data
-			var batchHeader = new JArray();
-			string sessionKey = Mage.Session.GetSessionKey();
-			if (!string.IsNullOrEmpty(sessionKey))
+			JArray batchHeaders = new JArray();
+			for (int batchHeaderI = 0; batchHeaderI < commandBatch.BatchHeaders.Count; batchHeaderI += 1)
 			{
-				var sessionHeader = new JObject();
-				sessionHeader.Add("name", new JValue("mage.session"));
-				sessionHeader.Add("key", new JValue(sessionKey));
-				batchHeader.Add(sessionHeader);
+				Dictionary<string, string> batchHeader = commandBatch.BatchHeaders[batchHeaderI];
+				batchHeaders.Add(JObject.FromObject(batchHeader));
 			}
-			data.Add(batchHeader.ToString(Newtonsoft.Json.Formatting.None));
+			data.Add(batchHeaders.ToString(Newtonsoft.Json.Formatting.None));
 
 			// Attach command names to url and parameters to post data
-			for (var batchId = 0; batchId < commandBatch.BatchItems.Count; batchId += 1)
+			for (int batchItemI = 0; batchItemI < commandBatch.BatchItems.Count; batchItemI += 1)
 			{
-				CommandBatchItem commandItem = commandBatch.BatchItems[batchId];
+				CommandBatchItem commandItem = commandBatch.BatchItems[batchItemI];
 				commands.Add(commandItem.CommandName);
 				data.Add(commandItem.Parameters.ToString(Newtonsoft.Json.Formatting.None));
 				Logger.Data(commandItem.Parameters).Verbose("sending command: " + commandItem.CommandName);
 			}
 
-			// Serialise post data
 			string batchUrl = endpoint + "/" + String.Join(",", commands.ToArray()) + "?queryId=" + commandBatch.QueryId.ToString();
 			string postData = string.Join("\n", data.ToArray());
 
+			// Cached the serialisation
+			commandBatch.SerialisedCache = (object)new CommandHttpClientCache(
+				batchUrl,
+				postData,
+				new Dictionary<string, string>(headers)
+			);
+		}
+
+		//
+		public override void SendBatch(CommandBatch commandBatch)
+		{
+			// Extract serialisation from cache
+			CommandHttpClientCache serialisedCache = (CommandHttpClientCache)commandBatch.SerialisedCache;
+			string batchUrl = serialisedCache.BatchUrl;
+			string postData = serialisedCache.PostData;
+			Dictionary<string, string> headers = serialisedCache.Headers;
+
 			// Send HTTP request
-			SendRequest(batchUrl, postData, responseArray => {
+			SendRequest(batchUrl, postData, headers, responseArray => {
 				// Process each command response
 				try
 				{
 					for (var batchId = 0; batchId < responseArray.Count; batchId += 1)
 					{
 						var commandResponse = responseArray[batchId] as JArray;
+						if (commandResponse == null)
+						{
+							throw new Exception("Response item " + batchId + " is not an Array:" + responseArray);
+						}
+
 						CommandBatchItem commandItem = commandBatch.BatchItems[batchId];
 						string commandName = commandItem.CommandName;
 						Action<Exception, JToken> commandCb = commandItem.Cb;
 
 						// Check if there are any events attached to this request
-						if (commandResponse != null && commandResponse.Count >= 3)
+						if (commandResponse.Count >= 3)
 						{
 							Logger.Verbose("[" + commandName + "] processing events");
 							Mage.EventManager.EmitEventList((JArray)commandResponse[2]);
 						}
 
 						// Check if the response was an error
-						if (commandResponse != null && commandResponse[0].Type != JTokenType.Null)
+						if (commandResponse[0].Type != JTokenType.Null)
 						{
 							Logger.Verbose("[" + commandName + "] server error");
 							commandCb(new Exception(commandResponse[0].ToString()), null);
-							return;
+							continue;
 						}
 
 						// Pull off call result object, if it doesn't exist
 						Logger.Verbose("[" + commandName + "] call response");
-						if (commandResponse != null)
+
+						try
 						{
 							commandCb(null, commandResponse[1]);
+						}
+						catch (Exception error)
+						{
+							Logger.Data(error).Error("Error during command callback");
 						}
 					}
 				}
@@ -111,16 +132,8 @@ namespace Wizcorp.MageSDK.Command.Client
 			});
 		}
 
-		private void SendRequest(string batchUrl, string postData, Action<JArray> cb)
+		private void SendRequest(string batchUrl, string postData, Dictionary<string, string> headers, Action<JArray> cb)
 		{
-			var headers = new Dictionary<string, string>();
-			if (username != null && password != null)
-			{
-				string authInfo = username + ":" + password;
-				string encodedAuth = Convert.ToBase64String(Encoding.Default.GetBytes(authInfo));
-				headers.Add("Authorization", "Basic " + encodedAuth);
-			}
-
 			HttpRequest.Post(batchUrl, "", postData, headers, Mage.Cookies, (requestError, responseString) => {
 				Logger.Verbose("Recieved response: " + responseString);
 
@@ -128,14 +141,12 @@ namespace Wizcorp.MageSDK.Command.Client
 				if (requestError != null)
 				{
 					var error = "network";
-					if (requestError is WebException)
+
+					// On error
+					var httpError = requestError as HttpRequestException;
+					if (httpError != null && httpError.Status == 503)
 					{
-						var webException = requestError as WebException;
-						var webResponse = webException.Response as HttpWebResponse;
-						if (webResponse != null && webResponse.StatusCode == HttpStatusCode.ServiceUnavailable)
-						{
-							error = "maintenance";
-						}
+						error = "maintenance";
 					}
 
 					OnTransportError.Invoke(error, requestError);

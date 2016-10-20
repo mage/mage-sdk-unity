@@ -1,11 +1,11 @@
-﻿using System;
-
 using UnityEngine;
 
 namespace Wizcorp.MageSDK.Utils
 {
 	public class MonoSingleton<T> : MonoBehaviour where T : MonoBehaviour
 	{
+		// Instance functions
+		protected static T instance;
 		public static T Instance
 		{
 			get
@@ -19,12 +19,14 @@ namespace Wizcorp.MageSDK.Utils
 			}
 		}
 
-		// Instance functions
-		private static T instance;
-
 		// Instantiation function if you need to pre-instantiate rather than on demand
 		public static void Instantiate()
 		{
+			if (instance != null)
+			{
+				return;
+			}
+
 			var newObject = new GameObject(typeof(T).Name);
 			DontDestroyOnLoad(newObject);
 
@@ -40,15 +42,7 @@ namespace Wizcorp.MageSDK.Utils
 				return;
 			}
 
-			try
-			{
-				instance = (T)(object)this;
-			}
-			catch (InvalidCastException e)
-			{
-				Debug.LogError(e);
-			}
-
+			instance = (T)(object)this;
 			DontDestroyOnLoad(gameObject);
 		}
 	}

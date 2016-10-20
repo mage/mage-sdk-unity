@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 
 using Newtonsoft.Json.Linq;
@@ -22,25 +22,12 @@ namespace Wizcorp.MageSDK.MageClient
 			get { return Mage.Logger(GetType().Name); }
 		}
 
+
 		//
 		protected virtual List<string> StaticTopics
 		{
 			get { return null; }
 		}
-
-		//
-		protected virtual string CommandPrefix
-		{
-			get { return null; }
-		}
-
-		protected virtual List<string> Commands
-		{
-			get { return null; }
-		}
-
-		private Dictionary<string, Action<JObject, Action<Exception, JToken>>> commandHandlerActions;
-		private Dictionary<string, Func<JObject, UserCommandStatus>> commandHandlerFuncs;
 
 		public JToken StaticData;
 
@@ -67,7 +54,7 @@ namespace Wizcorp.MageSDK.MageClient
 			}
 
 			StaticData = null;
-			Mage.Archivist.Mget(queries, null, (error, data) => {
+			Mage.Archivist.MGet(queries, null, (error, data) => {
 				if (error != null)
 				{
 					cb(error);
@@ -78,6 +65,21 @@ namespace Wizcorp.MageSDK.MageClient
 				cb(null);
 			});
 		}
+
+
+		//
+		protected virtual string CommandPrefix
+		{
+			get { return null; }
+		}
+
+		protected virtual List<string> Commands
+		{
+			get { return null; }
+		}
+
+		private Dictionary<string, Action<JObject, Action<Exception, JToken>>> commandHandlerActions;
+		private Dictionary<string, Func<JObject, UserCommandStatus>> commandHandlerFuncs;
 
 		public void Command(string commandName, JObject arguments, Action<Exception, JToken> cb)
 		{

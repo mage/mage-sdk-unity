@@ -1,4 +1,4 @@
-﻿namespace Wizcorp.MageSDK.Log.Writers
+namespace Wizcorp.MageSDK.Log.Writers
 {
 	public abstract class LogWriter
 	{

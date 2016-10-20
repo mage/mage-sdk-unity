@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 
 using Newtonsoft.Json.Linq;
@@ -7,13 +7,10 @@ namespace Wizcorp.MageSDK.Tomes
 {
 	public class Tome
 	{
-		public delegate void OnAdd(JToken key);
-
 		public delegate void OnChanged(JToken oldValue);
-
-		public delegate void OnDel(JToken key);
-
 		public delegate void OnDestroy();
+		public delegate void OnAdd(JToken key);
+		public delegate void OnDel(JToken key);
 
 		//
 		public static JToken Conjure(JToken data, JToken root = null)
@@ -35,25 +32,13 @@ namespace Wizcorp.MageSDK.Tomes
 			switch (data.Type)
 			{
 				case JTokenType.Array:
-					var tomeArray = data as TomeArray;
-					if (tomeArray != null)
-					{
-						tomeArray.Destroy();
-					}
+					((TomeArray)data).Destroy();
 					break;
 				case JTokenType.Object:
-					var tomeObject = data as TomeObject;
-					if (tomeObject != null)
-					{
-						tomeObject.Destroy();
-					}
+					((TomeObject)data).Destroy();
 					break;
 				default:
-					var tomeValue = data as TomeValue;
-					if (tomeValue != null)
-					{
-						tomeValue.Destroy();
-					}
+					((TomeValue)data).Destroy();
 					break;
 			}
 		}
@@ -108,15 +93,15 @@ namespace Wizcorp.MageSDK.Tomes
 			switch (parent.Type)
 			{
 				case JTokenType.Array:
-					var parentArray = parent as TomeArray;
-					if (parentArray != null && parentArray.OnChanged != null)
+					var parentArray = (TomeArray)parent;
+					if (parentArray.OnChanged != null)
 					{
 						parentArray.OnChanged.Invoke(null);
 					}
 					break;
 				case JTokenType.Object:
-					var parentObject = parent as TomeObject;
-					if (parentObject != null && parentObject.OnChanged != null)
+					var parentObject = (TomeObject)parent;
+					if (parentObject.OnChanged != null)
 					{
 						parentObject.OnChanged.Invoke(null);
 					}
@@ -132,9 +117,8 @@ namespace Wizcorp.MageSDK.Tomes
 		//
 		public static void ApplyDiff(JToken root, JArray operations)
 		{
-			foreach (var jToken in operations)
+			foreach (JObject operation in operations)
 			{
-				var operation = (JObject)jToken;
 				try
 				{
 					JToken value = PathValue(root, (JArray)operation["chain"]);
@@ -145,25 +129,13 @@ namespace Wizcorp.MageSDK.Tomes
 					switch (value.Type)
 					{
 						case JTokenType.Array:
-							var tomeArray = value as TomeArray;
-							if (tomeArray != null)
-							{
-								tomeArray.ApplyOperation(op, val, root);
-							}
+							((TomeArray)value).ApplyOperation(op, val, root);
 							break;
 						case JTokenType.Object:
-							var tomeObject = value as TomeObject;
-							if (tomeObject != null)
-							{
-								tomeObject.ApplyOperation(op, val, root);
-							}
+							((TomeObject)value).ApplyOperation(op, val, root);
 							break;
 						default:
-							var tomeValue = value as TomeValue;
-							if (tomeValue != null)
-							{
-								tomeValue.ApplyOperation(op, val);
-							}
+							((TomeValue)value).ApplyOperation(op, val);
 							break;
 					}
 				}

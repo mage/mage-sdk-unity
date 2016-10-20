@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 
 using Newtonsoft.Json.Linq;
@@ -368,33 +368,30 @@ namespace Wizcorp.MageSDK.MageClient
 
 
 			// Get data from server
-			RawGet(
-				topic,
-				index,
-				(error, result) => {
-					if (error != null)
-					{
-						cb(error, null);
-						return;
-					}
+			RawGet(topic, index, (error, result) => {
+				if (error != null)
+				{
+					cb(error, null);
+					return;
+				}
 
-					// Parse value
-					try
-					{
-						ValueSetOrDelete((JObject)result);
-					}
-					catch (Exception cacheError)
-					{
-						cb(cacheError, null);
-						return;
-					}
+				// Parse value
+				try
+				{
+					ValueSetOrDelete((JObject)result);
+				}
+				catch (Exception cacheError)
+				{
+					cb(cacheError, null);
+					return;
+				}
 
-					// Return result
-					cb(null, GetCacheValue(cacheKeyName).Data);
-				});
+				// Return result
+				cb(null, GetCacheValue(cacheKeyName).Data);
+			});
 		}
 
-		public void Mget(JArray queries, JObject options, Action<Exception, JToken> cb)
+		public void MGet(JArray queries, JObject options, Action<Exception, JToken> cb)
 		{
 			// Default options
 			options = (options != null) ? options : new JObject();
@@ -411,9 +408,8 @@ namespace Wizcorp.MageSDK.MageClient
 
 
 			// Check cache
-			foreach (var jToken in queries)
+			foreach (JObject query in queries)
 			{
-				var query = (JObject)jToken;
 				var topic = (string)query["topic"];
 				var index = (JObject)query["index"];
 				string cacheKeyName = CreateCacheKey(topic, index);
@@ -440,51 +436,48 @@ namespace Wizcorp.MageSDK.MageClient
 
 
 			// Get data from server
-			RawMGet(
-				realQueries,
-				options,
-				(error, results) => {
-					if (error != null)
+			RawMGet(realQueries, options, (error, results) => {
+				if (error != null)
+				{
+					cb(error, null);
+					return;
+				}
+
+				try
+				{
+					var resultsArray = results as JArray;
+					if (resultsArray == null)
 					{
-						cb(error, null);
-						return;
+						throw new Exception("RawMGet returned non Array results: " + results);
 					}
 
-					try
+					foreach (JObject topicValue in resultsArray)
 					{
-						var jTokens = results as JArray;
-						if (jTokens != null)
-						{
-							foreach (var jToken in jTokens)
-							{
-								var topicValue = (JObject)jToken;
+						// Determine value cacheKeyName
+						var topic = (string)topicValue["key"]["topic"];
+						var index = (JObject)topicValue["key"]["index"];
+						string cacheKeyName = CreateCacheKey(topic, index);
 
-								// Determine value cacheKeyName
-								var topic = (string)topicValue["key"]["topic"];
-								var index = (JObject)topicValue["key"]["index"];
-								string cacheKeyName = CreateCacheKey(topic, index);
+						// Set value to cache
+						ValueSetOrDelete(topicValue);
 
-								// Set value to cache
-								ValueSetOrDelete(topicValue);
-
-								// Add value to response
-								int responseKey = realQueryKeys[cacheKeyName];
-								responseArray[responseKey].Replace(GetCacheValue(cacheKeyName).Data);
-							}
-						}
+						// Add value to response
+						int responseKey = realQueryKeys[cacheKeyName];
+						responseArray[responseKey].Replace(GetCacheValue(cacheKeyName).Data);
 					}
-					catch (Exception cacheError)
-					{
-						cb(cacheError, null);
-						return;
-					}
+				}
+				catch (Exception cacheError)
+				{
+					cb(cacheError, null);
+					return;
+				}
 
-					// Return result
-					cb(null, responseArray);
-				});
+				// Return result
+				cb(null, responseArray);
+			});
 		}
 
-		public void Mget(JObject queries, JObject options, Action<Exception, JToken> cb)
+		public void MGet(JObject queries, JObject options, Action<Exception, JToken> cb)
 		{
 			// Default options
 			options = (options != null) ? options : new JObject();
@@ -526,48 +519,45 @@ namespace Wizcorp.MageSDK.MageClient
 
 
 			// Get data from server
-			RawMGet(
-				realQueries,
-				options,
-				(error, results) => {
-					if (error != null)
+			RawMGet(realQueries, options, (error, results) => {
+				if (error != null)
+				{
+					cb(error, null);
+					return;
+				}
+
+				try
+				{
+					var resultsArray = results as JArray;
+					if (resultsArray == null)
 					{
-						cb(error, null);
-						return;
+						throw new Exception("RawMGet returned non Array results: " + results);
 					}
 
-					try
+					foreach (JObject topicValue in resultsArray)
 					{
-						var jTokens = results as JArray;
-						if (jTokens != null)
-						{
-							foreach (var jToken in jTokens)
-							{
-								var topicValue = (JObject)jToken;
+						// Determine value cacheKeyName
+						string valueTopic = topicValue["key"]["topic"].ToString();
+						var valueIndex = (JObject)topicValue["key"]["index"];
+						string cacheKeyName = CreateCacheKey(valueTopic, valueIndex);
 
-								// Determine value cacheKeyName
-								string valueTopic = topicValue["key"]["topic"].ToString();
-								var valueIndex = (JObject)topicValue["key"]["index"];
-								string cacheKeyName = CreateCacheKey(valueTopic, valueIndex);
+						// Set value to cache
+						ValueSetOrDelete(topicValue);
 
-								// Set value to cache
-								ValueSetOrDelete(topicValue);
-
-								// Add value to response
-								string responseKey = realQueryKeys[cacheKeyName];
-								responseObject.Add(responseKey, GetCacheValue(cacheKeyName).Data);
-							}
-						}
+						// Add value to response
+						string responseKey = realQueryKeys[cacheKeyName];
+						responseObject.Add(responseKey, GetCacheValue(cacheKeyName).Data);
 					}
-					catch (Exception cacheError)
-					{
-						cb(cacheError, null);
-						return;
-					}
+				}
+				catch (Exception cacheError)
+				{
+					cb(cacheError, null);
+					return;
+				}
 
-					// Return result
-					cb(null, responseObject);
-				});
+				// Return result
+				cb(null, responseObject);
+			});
 		}
 
 		public void List(string topic, JObject partialIndex, JObject options, Action<Exception, JToken> cb)

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 
 using Newtonsoft.Json.Linq;
@@ -9,30 +9,29 @@ namespace Wizcorp.MageSDK.Tomes
 {
 	public class TomeArray : JArray
 	{
-		public Tome.OnAdd OnAdd;
-
 		//
 		public Tome.OnChanged OnChanged;
-		public Tome.OnDel OnDel;
 		public Tome.OnDestroy OnDestroy;
+		public Tome.OnAdd OnAdd;
+		public Tome.OnDel OnDel;
 
 		//
-		private JToken parent;
+		private JToken root;
 
 		//
 		public TomeArray(JArray data, JToken root)
 		{
 			//
-			parent = root;
-			if (parent == null)
+			this.root = root;
+			if (this.root == null)
 			{
-				parent = this;
+				this.root = this;
 			}
 
 			//
 			for (var i = 0; i < data.Count; i += 1)
 			{
-				Add(Tome.Conjure(data[i], parent));
+				Add(Tome.Conjure(data[i], root));
 			}
 
 			//
@@ -44,7 +43,7 @@ namespace Wizcorp.MageSDK.Tomes
 		//
 		private void EmitToParents(JToken oldValue)
 		{
-			if (this != parent)
+			if (this != root)
 			{
 				Tome.EmitParentChange(Parent);
 			}
@@ -67,12 +66,12 @@ namespace Wizcorp.MageSDK.Tomes
 				switch (newValue.Type)
 				{
 					case JTokenType.Array:
-						var newTomeArray = new TomeArray((JArray)newValue, parent);
+						var newTomeArray = new TomeArray((JArray)newValue, root);
 						Replace(newTomeArray);
 
 						if (Parent == null)
 						{
-							// If replace was successfuly move over event handlers and call new onChanged handler
+							// If replace was successfuly move over event handlers and call new OnChanged handler
 							// The instance in which replace would not be successful, is when the old and new values are the same
 							OnChanged -= EmitToParents;
 							OnChanged += newTomeArray.OnChanged;
@@ -92,7 +91,7 @@ namespace Wizcorp.MageSDK.Tomes
 						}
 						else
 						{
-							// Otherwise call original onChanged handler
+							// Otherwise call original OnChanged handler
 							if (OnChanged != null)
 							{
 								OnChanged.Invoke(null);
@@ -100,12 +99,12 @@ namespace Wizcorp.MageSDK.Tomes
 						}
 						break;
 					case JTokenType.Object:
-						var newTomeObject = new TomeObject((JObject)newValue, parent);
+						var newTomeObject = new TomeObject((JObject)newValue, root);
 						Replace(newTomeObject);
 
 						if (Parent == null)
 						{
-							// If replace was successfuly move over event handlers and call new onChanged handler
+							// If replace was successfuly move over event handlers and call new OnChanged handler
 							// The instance in which replace would not be successful, is when the old and new values are the same
 							OnChanged -= EmitToParents;
 							OnChanged += newTomeObject.OnChanged;
@@ -125,7 +124,7 @@ namespace Wizcorp.MageSDK.Tomes
 						}
 						else
 						{
-							// Otherwise call original onChanged handler
+							// Otherwise call original OnChanged handler
 							if (OnChanged != null)
 							{
 								OnChanged.Invoke(null);
@@ -133,12 +132,12 @@ namespace Wizcorp.MageSDK.Tomes
 						}
 						break;
 					default:
-						var newTomeValue = new TomeValue((JValue)newValue, parent);
+						var newTomeValue = new TomeValue((JValue)newValue, root);
 						Replace(newTomeValue);
 
 						if (Parent == null)
 						{
-							// If replace was successfuly move over event handlers and call new onChanged handler
+							// If replace was successfuly move over event handlers and call new OnChanged handler
 							// The instance in which replace would not be successful, is when the old and new values are the same
 							OnChanged -= EmitToParents;
 							OnChanged += newTomeValue.OnChanged;
@@ -152,7 +151,7 @@ namespace Wizcorp.MageSDK.Tomes
 						}
 						else
 						{
-							// Otherwise call original onChanged handler
+							// Otherwise call original OnChanged handler
 							if (OnChanged != null)
 							{
 								OnChanged.Invoke(null);
@@ -195,10 +194,10 @@ namespace Wizcorp.MageSDK.Tomes
 				{
 					while (Count < index)
 					{
-						Add(Tome.Conjure(JValue.CreateNull(), parent));
+						Add(Tome.Conjure(JValue.CreateNull(), root));
 					}
 
-					Add(Tome.Conjure(value, parent));
+					Add(Tome.Conjure(value, root));
 					if (OnAdd != null)
 					{
 						OnAdd.Invoke(index);
@@ -211,27 +210,19 @@ namespace Wizcorp.MageSDK.Tomes
 				switch (property.Type)
 				{
 					case JTokenType.Array:
-						var tomeArray = property as TomeArray;
-						if (tomeArray != null)
-						{
-							tomeArray.Assign(value);
-						}
+						((TomeArray)property).Assign(value);
 						break;
 					case JTokenType.Object:
-						var tomeObject = property as TomeObject;
-						if (tomeObject != null)
-						{
-							tomeObject.Assign(value);
-						}
+						((TomeObject)property).Assign(value);
 						break;
 					default:
-						if ((property as TomeValue) == null)
+						var tomeValue = property as TomeValue;
+						if (tomeValue == null)
 						{
 							Mage.Instance.Logger("Tomes").Data(property).Error("property is not a tome value: " + index.ToString());
 							UnityEngine.Debug.Log(this);
 						}
-						var tomeValue = property as TomeValue;
-						if (tomeValue != null)
+						else
 						{
 							tomeValue.Assign(value);
 						}
@@ -249,29 +240,21 @@ namespace Wizcorp.MageSDK.Tomes
 				switch (property.Type)
 				{
 					case JTokenType.Array:
-						var tomeArray = property as TomeArray;
-						if (tomeArray != null)
-						{
-							tomeArray.Destroy();
-						}
+						((TomeArray)property).Destroy();
 						break;
 					case JTokenType.Object:
-						var tomeObject = property as TomeObject;
-						if (tomeObject != null)
-						{
-							tomeObject.Destroy();
-						}
+						((TomeObject)property).Destroy();
 						break;
 					default:
-						if ((property as TomeValue) == null)
+						var tomeValue = property as TomeValue;
+						if (tomeValue == null)
 						{
 							Mage.Instance.Logger("Tomes").Data(property).Error("property is not a tome value:" + index.ToString());
 							UnityEngine.Debug.Log(this);
 						}
-						var value = property as TomeValue;
-						if (value != null)
+						else
 						{
-							value.Destroy();
+							tomeValue.Destroy();
 						}
 						break;
 				}
@@ -291,19 +274,11 @@ namespace Wizcorp.MageSDK.Tomes
 			{
 				if (newParent.Type == JTokenType.Array)
 				{
-					var tomeArray = newParent as TomeArray;
-					if (tomeArray != null)
-					{
-						tomeArray.Set((int)newKey, this[fromKey]);
-					}
+					((TomeArray)newParent).Set((int)newKey, this[fromKey]);
 				}
 				else
 				{
-					var tomeObject = newParent as TomeObject;
-					if (tomeObject != null)
-					{
-						tomeObject.Set((string)newKey, this[fromKey]);
-					}
+					((TomeObject)newParent).Set((string)newKey, this[fromKey]);
 				}
 
 				Del(fromKey);
@@ -388,7 +363,7 @@ namespace Wizcorp.MageSDK.Tomes
 		{
 			lock ((object)this)
 			{
-				AddFirst(Tome.Conjure(item, parent));
+				AddFirst(Tome.Conjure(item, root));
 				if (OnAdd != null)
 				{
 					OnAdd.Invoke(0);
@@ -491,15 +466,11 @@ namespace Wizcorp.MageSDK.Tomes
 						break;
 
 					case "rename":
-						var keyValuePairs = val as JObject;
-						if (keyValuePairs != null)
+						foreach (KeyValuePair<string, JToken> property in (JObject)val)
 						{
-							foreach (KeyValuePair<string, JToken> property in keyValuePairs)
-							{
-								int wasKey = int.Parse(property.Key);
-								var isKey = (int)property.Value;
-								Rename(wasKey, isKey);
-							}
+							int wasKey = int.Parse(property.Key);
+							var isKey = (int)property.Value;
+							Rename(wasKey, isKey);
 						}
 						break;
 
@@ -511,13 +482,9 @@ namespace Wizcorp.MageSDK.Tomes
 						break;
 
 					case "push":
-						var jArray = val as JArray;
-						if (jArray != null)
+						foreach (JToken item in (JArray)val)
 						{
-							foreach (JToken item in jArray)
-							{
-								Push(item);
-							}
+							Push(item);
 						}
 						break;
 
@@ -531,12 +498,9 @@ namespace Wizcorp.MageSDK.Tomes
 
 					case "unshift":
 						var unshiftItems = val as JArray;
-						if (unshiftItems != null)
+						for (int i = unshiftItems.Count; i > 0; i -= 1)
 						{
-							for (int i = unshiftItems.Count; i > 0; i -= 1)
-							{
-								UnShift(unshiftItems[i - 1]);
-							}
+							UnShift(unshiftItems[i - 1]);
 						}
 						break;
 

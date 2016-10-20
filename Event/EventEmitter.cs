@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 
@@ -6,10 +6,9 @@ namespace Wizcorp.MageSDK.Event
 {
 	public class EventEmitter<T>
 	{
-		private EventHandlerList eventsList = new EventHandlerList();
-
 		//
 		private Dictionary<string, object> eventTags = new Dictionary<string, object>();
+		private EventHandlerList eventsList = new EventHandlerList();
 
 		//
 		public void On(string eventTag, Action<object, T> handler)

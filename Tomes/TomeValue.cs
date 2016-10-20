@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 
 using Newtonsoft.Json.Linq;
 
@@ -11,16 +11,16 @@ namespace Wizcorp.MageSDK.Tomes
 		public Tome.OnDestroy OnDestroy;
 
 		//
-		private JToken parent;
+		private JToken root;
 
 		//
 		public TomeValue(JValue value, JToken root) : base(value)
 		{
 			//
-			parent = root;
-			if (parent == null)
+			this.root = root;
+			if (this.root == null)
 			{
-				parent = this;
+				this.root = this;
 			}
 
 			//
@@ -30,7 +30,7 @@ namespace Wizcorp.MageSDK.Tomes
 		//
 		private void EmitToParents(JToken oldValue)
 		{
-			if (!Equals(this, parent))
+			if (!Equals(this, root))
 			{
 				Tome.EmitParentChange(Parent);
 			}
@@ -44,12 +44,12 @@ namespace Wizcorp.MageSDK.Tomes
 				switch (newValue.Type)
 				{
 					case JTokenType.Array:
-						var newTomeArray = new TomeArray((JArray)newValue, parent);
+						var newTomeArray = new TomeArray((JArray)newValue, root);
 						Replace(newTomeArray);
 
 						if (Parent == null)
 						{
-							// If replace was successfuly move over event handlers and call new onChanged handler
+							// If replace was successfuly move over event handlers and call new OnChanged handler
 							// The instance in which replace would not be successful, is when the old and new values are the same
 							OnChanged -= EmitToParents;
 							OnChanged += newTomeArray.OnChanged;
@@ -63,7 +63,7 @@ namespace Wizcorp.MageSDK.Tomes
 						}
 						else
 						{
-							// Otherwise call original onChanged handler
+							// Otherwise call original OnChanged handler
 							if (OnChanged != null)
 							{
 								OnChanged.Invoke(null);
@@ -71,12 +71,12 @@ namespace Wizcorp.MageSDK.Tomes
 						}
 						break;
 					case JTokenType.Object:
-						var newTomeObject = new TomeObject((JObject)newValue, parent);
+						var newTomeObject = new TomeObject((JObject)newValue, root);
 						Replace(newTomeObject);
 
 						if (Parent == null)
 						{
-							// If replace was successfuly move over event handlers and call new onChanged handler
+							// If replace was successfuly move over event handlers and call new OnChanged handler
 							// The instance in which replace would not be successful, is when the old and new values are the same
 							OnChanged -= EmitToParents;
 							OnChanged += newTomeObject.OnChanged;
@@ -90,7 +90,7 @@ namespace Wizcorp.MageSDK.Tomes
 						}
 						else
 						{
-							// Otherwise call original onChanged handler
+							// Otherwise call original OnChanged handler
 							if (OnChanged != null)
 							{
 								OnChanged.Invoke(null);
@@ -98,12 +98,12 @@ namespace Wizcorp.MageSDK.Tomes
 						}
 						break;
 					default:
-						var newTomeValue = new TomeValue((JValue)newValue, parent);
+						var newTomeValue = new TomeValue((JValue)newValue, root);
 						Replace(newTomeValue);
 
 						if (Parent == null)
 						{
-							// If replace was successfuly move over event handlers and call new onChanged handler
+							// If replace was successfuly move over event handlers and call new OnChanged handler
 							// The instance in which replace would not be successful, is when the old and new values are the same
 							OnChanged -= EmitToParents;
 							OnChanged += newTomeValue.OnChanged;
@@ -117,7 +117,7 @@ namespace Wizcorp.MageSDK.Tomes
 						}
 						else
 						{
-							// Otherwise call original onChanged handler
+							// Otherwise call original OnChanged handler
 							if (OnChanged != null)
 							{
 								OnChanged.Invoke(null);

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Text;
 
@@ -7,9 +7,7 @@ using Newtonsoft.Json.Linq;
 using Wizcorp.MageSDK.Log;
 using Wizcorp.MageSDK.MageClient.Message.Client;
 
-#if UNITY_EDITOR
-using Wizcorp.MageSDK.Editor;
-#endif
+using Wizcorp.MageSDK.Unity;
 
 namespace Wizcorp.MageSDK.MageClient.Message
 {
@@ -25,21 +23,31 @@ namespace Wizcorp.MageSDK.MageClient.Message
 			get { return Mage.Logger("messagestream"); }
 		}
 
-		private List<string> confirmIds;
-
-		// Current message stack
-		private int currentMessageId;
-
 		// Endpoint and credentials
 		private string endpoint;
-		private int largestMessageId;
-		private Dictionary<int, JToken> messageQueue;
-		private string password;
+		private Dictionary<string, string> headers;
 		private string sessionKey;
 
 		// Current transport client
 		private TransportClient transportClient;
-		private string username;
+
+		// Current message stack
+		private int currentMessageId;
+		private int largestMessageId;
+		private Dictionary<int, JToken> messageQueue;
+		private List<string> confirmIds;
+
+
+		//
+		private void InitializeMessageList()
+		{
+			currentMessageId = -1;
+			largestMessageId = -1;
+			messageQueue = new Dictionary<int, JToken>();
+			confirmIds = new List<string>();
+
+			Logger.Debug("Initialized message queue");
+		}
 
 
 		// Constructor
@@ -61,7 +69,7 @@ namespace Wizcorp.MageSDK.MageClient.Message
 				sessionKey = null;
 			});
 
-			// Also stop the message client when the editor is stopped
+			// Also stop the message client when the application is stopped
 			#if UNITY_EDITOR
 			UnityEditorPlayMode.OnEditorModeChanged += newState => {
 				if (newState == EditorPlayModeState.Stopped)
@@ -70,23 +78,30 @@ namespace Wizcorp.MageSDK.MageClient.Message
 					InitializeMessageList();
 					sessionKey = null;
 				}
+				if (newState == EditorPlayModeState.Paused && transportClient.running)
+				{
+					transportClient.Stop();
+				}
+				if (newState == EditorPlayModeState.Playing && !transportClient.running && sessionKey != null)
+				{
+					transportClient.Start();
+				}
 			};
 			#endif
 
+			UnityApplicationState.Instance.OnAppStateChanged += pauseStatus => {
+				if (pauseStatus && transportClient.running)
+				{
+					transportClient.Stop();
+				}
+				if (!pauseStatus && !transportClient.running && sessionKey != null)
+				{
+					transportClient.Start();
+				}
+			};
+
 			// Set the selected transport client (or the default)
 			SetTransport(transport);
-		}
-
-
-		//
-		private void InitializeMessageList()
-		{
-			currentMessageId = -1;
-			largestMessageId = -1;
-			messageQueue = new Dictionary<int, JToken>();
-			confirmIds = new List<string>();
-
-			Logger.Debug("Initialized message queue");
 		}
 
 
@@ -105,11 +120,10 @@ namespace Wizcorp.MageSDK.MageClient.Message
 
 
 		// Updates URI and credentials 
-		public void SetEndpoint(string url, string login = null, string pass = null)
+		public void SetEndpoint(string baseURL, Dictionary<string, string> headers = null)
 		{
-			endpoint = url + "/msgstream";
-			username = login;
-			password = pass;
+			this.endpoint = baseURL + "/msgstream";
+			this.headers = headers;
 		}
 
 
@@ -125,7 +139,8 @@ namespace Wizcorp.MageSDK.MageClient.Message
 			}
 
 			// Create new transport client instance
-			switch (transport) {
+			switch (transport)
+			{
 				case TransportType.SHORTPOLLING:
 					Func<string> getShortPollingEndpoint = () => GetHttpPollingEndpoint("shortpolling");
 					transportClient = new ShortPolling(getShortPollingEndpoint, GetHttpHeaders, ProcessMessagesString);
@@ -157,15 +172,6 @@ namespace Wizcorp.MageSDK.MageClient.Message
 		// Returns the required HTTP headers
 		private Dictionary<string, string> GetHttpHeaders()
 		{
-			if (username == null && password == null)
-			{
-				return null;
-			}
-
-			var headers = new Dictionary<string, string>();
-			string authInfo = username + ":" + password;
-			string encodedAuth = Convert.ToBase64String(Encoding.Default.GetBytes(authInfo));
-			headers.Add("Authorization", "Basic " + encodedAuth);
 			return headers;
 		}
 
