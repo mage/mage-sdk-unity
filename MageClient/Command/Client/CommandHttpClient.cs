@@ -67,7 +67,7 @@ namespace Wizcorp.MageSDK.Command.Client
 			commandBatch.SerialisedCache = (object)new CommandHttpClientCache(
 				batchUrl,
 				postData,
-				new Dictionary<string, string>(headers)
+				(headers != null) ? new Dictionary<string, string>(headers) : new Dictionary<string, string>()
 			);
 		}
 

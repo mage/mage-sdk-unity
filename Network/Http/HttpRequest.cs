@@ -39,7 +39,7 @@ namespace Wizcorp.MageSDK.Network.Http
 		// Main thread constructor
 		private IEnumerator Constructor(string url, string contentType, byte[] postData, Dictionary<string, string> headers, CookieContainer cookies, Action<Exception, string> cb)
 		{
-			Dictionary<string, string> headersCopy = new Dictionary<string, string>(headers);
+			Dictionary<string, string> headersCopy = (headers != null) ? new Dictionary<string, string>(headers) : new Dictionary<string, string>();
 
 			// Set content type if provided
 			if (contentType != null)
