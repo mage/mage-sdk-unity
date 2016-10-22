@@ -151,7 +151,7 @@ namespace Wizcorp.MageSDK.Network.Http
 			}
 
 			WWW request = this.request;
-			request = null;
+			this.request = null;
 
 			request.Dispose();
 			timeoutTimer.Stop();
