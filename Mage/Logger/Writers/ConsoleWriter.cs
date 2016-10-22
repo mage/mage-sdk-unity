@@ -110,12 +110,25 @@ namespace Wizcorp.MageSDK.Log.Writers
 			return String.Format("[{0}] [{1}] {2}", channel, context, message);
 		}
 
+		private object makeDataString(object logData)
+		{
+			// Check if data is an excetion with a stack trace
+			var exception = logData as Exception;
+			if (exception != null && exception.StackTrace != null)
+			{
+				return exception + ":\n" + exception.StackTrace;
+			}
+
+			// Otherwise log data as is using its toString function
+			return logData;
+		}
+
 		private void Verbose(object sender, LogEntry logEntry)
 		{
 			UnityEngine.Debug.Log(makeLogString("verbose", logEntry.Context, logEntry.Message));
 			if (logEntry.Data != null)
 			{
-				UnityEngine.Debug.Log(logEntry.Data);
+				UnityEngine.Debug.Log(makeDataString(logEntry.Data));
 			}
 		}
 
@@ -124,7 +137,7 @@ namespace Wizcorp.MageSDK.Log.Writers
 			UnityEngine.Debug.Log(makeLogString("debug", logEntry.Context, logEntry.Message));
 			if (logEntry.Data != null)
 			{
-				UnityEngine.Debug.Log(logEntry.Data);
+				UnityEngine.Debug.Log(makeDataString(logEntry.Data));
 			}
 		}
 
@@ -133,7 +146,7 @@ namespace Wizcorp.MageSDK.Log.Writers
 			UnityEngine.Debug.Log(makeLogString("info", logEntry.Context, logEntry.Message));
 			if (logEntry.Data != null)
 			{
-				UnityEngine.Debug.Log(logEntry.Data);
+				UnityEngine.Debug.Log(makeDataString(logEntry.Data));
 			}
 		}
 
@@ -142,7 +155,7 @@ namespace Wizcorp.MageSDK.Log.Writers
 			UnityEngine.Debug.Log(makeLogString("notice", logEntry.Context, logEntry.Message));
 			if (logEntry.Data != null)
 			{
-				UnityEngine.Debug.Log(logEntry.Data);
+				UnityEngine.Debug.Log(makeDataString(logEntry.Data));
 			}
 		}
 
@@ -151,7 +164,7 @@ namespace Wizcorp.MageSDK.Log.Writers
 			UnityEngine.Debug.LogWarning(makeLogString("warning", logEntry.Context, logEntry.Message));
 			if (logEntry.Data != null)
 			{
-				UnityEngine.Debug.LogWarning(logEntry.Data);
+				UnityEngine.Debug.LogWarning(makeDataString(logEntry.Data));
 			}
 		}
 
@@ -160,7 +173,7 @@ namespace Wizcorp.MageSDK.Log.Writers
 			UnityEngine.Debug.LogError(makeLogString("error", logEntry.Context, logEntry.Message));
 			if (logEntry.Data != null)
 			{
-				UnityEngine.Debug.LogError(logEntry.Data);
+				UnityEngine.Debug.LogError(makeDataString(logEntry.Data));
 			}
 		}
 
@@ -169,15 +182,7 @@ namespace Wizcorp.MageSDK.Log.Writers
 			UnityEngine.Debug.LogError(makeLogString("critical", logEntry.Context, logEntry.Message));
 			if (logEntry.Data != null)
 			{
-				if (logEntry.Data is Exception && (logEntry.Data as Exception).StackTrace != null)
-				{
-					var excpt = logEntry.Data as Exception;
-					UnityEngine.Debug.LogError(excpt + ":\n" + excpt.StackTrace);
-				}
-				else
-				{
-					UnityEngine.Debug.LogError(logEntry.Data);
-				}
+				UnityEngine.Debug.LogError(makeDataString(logEntry.Data));
 			}
 		}
 
@@ -186,7 +191,7 @@ namespace Wizcorp.MageSDK.Log.Writers
 			UnityEngine.Debug.LogError(makeLogString("alert", logEntry.Context, logEntry.Message));
 			if (logEntry.Data != null)
 			{
-				UnityEngine.Debug.LogError(logEntry.Data);
+				UnityEngine.Debug.LogError(makeDataString(logEntry.Data));
 			}
 		}
 
@@ -195,7 +200,7 @@ namespace Wizcorp.MageSDK.Log.Writers
 			UnityEngine.Debug.LogError(makeLogString("emergency", logEntry.Context, logEntry.Message));
 			if (logEntry.Data != null)
 			{
-				UnityEngine.Debug.LogError(logEntry.Data);
+				UnityEngine.Debug.LogError(makeDataString(logEntry.Data));
 			}
 		}
 	}

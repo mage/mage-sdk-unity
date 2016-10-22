@@ -237,10 +237,10 @@ namespace Wizcorp.MageSDK.Tomes
 				switch (property.Type)
 				{
 					case JTokenType.Array:
-						((TomeArray)property as TomeArray).Destroy();
+						((TomeArray)property).Destroy();
 						break;
 					case JTokenType.Object:
-						((TomeObject)property as TomeObject).Destroy();
+						((TomeObject)property).Destroy();
 						break;
 					default:
 						var tomeValue = property as TomeValue;

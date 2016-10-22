@@ -12,7 +12,7 @@ using System.Threading;
 
 namespace Wizcorp.MageSDK.Network.Http
 {
-	public class HTTPRequest
+	public class HttpRequest
 	{
 		private HttpWebRequest request;
 		private CookieContainer cookies;
@@ -41,7 +41,7 @@ namespace Wizcorp.MageSDK.Network.Http
 
 
 		// Constructor
-		public HTTPRequest(string url, string contentType, byte[] postData, Dictionary<string, string> headers, CookieContainer cookies, Action<Exception, string> cb)
+		public HttpRequest(string url, string contentType, byte[] postData, Dictionary<string, string> headers, CookieContainer cookies, Action<Exception, string> cb)
 		{
 			// Start timeout timer
 			timeoutTimer = new Timer((object state) => {
@@ -172,24 +172,24 @@ namespace Wizcorp.MageSDK.Network.Http
 
 
 		// Create GET request and return it
-		public static HTTPRequest Get(string url, Dictionary<string, string> headers, CookieContainer cookies, Action<Exception, string> cb)
+		public static HttpRequest Get(string url, Dictionary<string, string> headers, CookieContainer cookies, Action<Exception, string> cb)
 		{
 			// Create request and return it
 			// The callback will be called when the request is complete
-			return new HTTPRequest(url, null, null, headers, cookies, cb);
+			return new HttpRequest(url, null, null, headers, cookies, cb);
 		}
 
 		// Create POST request and return it
-		public static HTTPRequest Post(string url, string contentType, string postData, Dictionary<string, string> headers, CookieContainer cookies, Action<Exception, string> cb)
+		public static HttpRequest Post(string url, string contentType, string postData, Dictionary<string, string> headers, CookieContainer cookies, Action<Exception, string> cb)
 		{
 			byte[] binaryPostData = Encoding.UTF8.GetBytes(postData);
 			return Post(url, contentType, binaryPostData, headers, cookies, cb);
 		}
 
 		// Create POST request and return it
-		public static HTTPRequest Post(string url, string contentType, byte[] postData, Dictionary<string, string> headers, CookieContainer cookies, Action<Exception, string> cb)
+		public static HttpRequest Post(string url, string contentType, byte[] postData, Dictionary<string, string> headers, CookieContainer cookies, Action<Exception, string> cb)
 		{
-			return new HTTPRequest(url, contentType, postData, headers, cookies, cb);
+			return new HttpRequest(url, contentType, postData, headers, cookies, cb);
 		}
 	}
 }

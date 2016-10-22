@@ -18,7 +18,7 @@ namespace Wizcorp.MageSDK.Command.Client
 
 		private Logger Logger
 		{
-			get { return Mage.Logger("CommandJsonrpcClient"); }
+			get { return Mage.Logger("CommandJsonRpcClient"); }
 		}
 
 		private JsonRpc rpcClient = new JsonRpc();

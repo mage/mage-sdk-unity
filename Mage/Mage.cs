@@ -44,7 +44,7 @@ namespace Wizcorp.MageSDK.MageClient
 			}
 
 			var newLogger = new Logger(context);
-			loggers.Add(context, new Logger(context));
+			loggers.Add(context, newLogger);
 			return newLogger;
 		}
 
