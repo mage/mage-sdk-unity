@@ -1,4 +1,4 @@
-﻿using Newtonsoft.Json.Linq;
+using Newtonsoft.Json.Linq;
 
 using Wizcorp.MageSDK.Event;
 using Wizcorp.MageSDK.Log;
@@ -14,7 +14,7 @@ namespace Wizcorp.MageSDK.MageClient
 
 		private Logger Logger
 		{
-			get { return Mage.Logger("eventManager"); }
+			get { return Mage.Logger("EventManager"); }
 		}
 
 

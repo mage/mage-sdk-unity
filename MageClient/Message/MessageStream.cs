@@ -20,7 +20,7 @@ namespace Wizcorp.MageSDK.MageClient.Message
 
 		private static Logger Logger
 		{
-			get { return Mage.Logger("messagestream"); }
+			get { return Mage.Logger("MessageStream"); }
 		}
 
 		// Endpoint and credentials
@@ -142,11 +142,11 @@ namespace Wizcorp.MageSDK.MageClient.Message
 			switch (transport)
 			{
 				case TransportType.SHORTPOLLING:
-					Func<string> getShortPollingEndpoint = () => GetHttpPollingEndpoint("shortpolling");
+					Func<string> getShortPollingEndpoint = () => { return GetHttpPollingEndpoint("shortpolling"); };
 					transportClient = new ShortPolling(getShortPollingEndpoint, GetHttpHeaders, ProcessMessagesString);
 					break;
 				case TransportType.LONGPOLLING:
-					Func<string> getLongPollingEndpoint = () => GetHttpPollingEndpoint("longpolling");
+					Func<string> getLongPollingEndpoint = () => { return GetHttpPollingEndpoint("longpolling"); };
 					transportClient = new LongPolling(getLongPollingEndpoint, GetHttpHeaders, ProcessMessagesString);
 					break;
 				default:
