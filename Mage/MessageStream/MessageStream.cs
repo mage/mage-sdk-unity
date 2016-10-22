@@ -20,7 +20,7 @@ namespace Wizcorp.MageSDK.MageClient.Message
 
 		private static Logger Logger
 		{
-			get { return Mage.Logger("messagestream"); }
+			get { return Mage.Logger("MessageStream"); }
 		}
 
 		// Endpoint and credentials

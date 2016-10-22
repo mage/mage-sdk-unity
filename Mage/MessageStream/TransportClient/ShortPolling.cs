@@ -16,7 +16,7 @@ namespace Wizcorp.MageSDK.MageClient.Message.Client
 
 		private static Logger Logger
 		{
-			get { return Mage.Logger("shortpolling"); }
+			get { return Mage.Logger("ShortPolling"); }
 		}
 
 		// Required functions for poll requests

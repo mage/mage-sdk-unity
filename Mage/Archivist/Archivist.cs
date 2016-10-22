@@ -17,7 +17,7 @@ namespace Wizcorp.MageSDK.MageClient
 
 		private Logger Logger
 		{
-			get { return Mage.Logger("archivist"); }
+			get { return Mage.Logger("Archivist"); }
 		}
 
 		// Local cache of all retrieved vault values

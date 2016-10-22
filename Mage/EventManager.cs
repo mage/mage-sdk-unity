@@ -14,7 +14,7 @@ namespace Wizcorp.MageSDK.MageClient
 
 		private Logger Logger
 		{
-			get { return Mage.Logger("eventManager"); }
+			get { return Mage.Logger("EventManager"); }
 		}
 
 
