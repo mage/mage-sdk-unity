@@ -15,7 +15,7 @@ namespace Wizcorp.MageSDK.Unity
 		{
 			if (OnAppStateChanged != null)
 			{
-                OnAppStateChanged.Invoke(pauseStatus);
+				OnAppStateChanged.Invoke(pauseStatus);
 			}
 		}
 	}

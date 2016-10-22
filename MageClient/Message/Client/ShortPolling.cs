@@ -107,7 +107,7 @@ namespace Wizcorp.MageSDK.MageClient.Message.Client
 			// Send poll request and wait for a response
 			string endpoint = getEndpoint();
 			Logger.Debug("Sending request: " + endpoint);
-            HttpRequest.Get(endpoint, getHeaders(), Mage.Cookies, (requestError, responseString) => {
+			HttpRequest.Get(endpoint, getHeaders(), Mage.Cookies, (requestError, responseString) => {
 				if (requestError != null)
 				{
 					Logger.Error(requestError.ToString());

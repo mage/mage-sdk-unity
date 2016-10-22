@@ -97,26 +97,26 @@ namespace Wizcorp.MageSDK.Network.JsonRpc
 
 			// Send request
 			SendRequest(postData, headers, cookies, (requestError, responseString) => {
-					if (requestError != null)
-					{
-						cb(requestError, null);
-						return;
-					}
+				if (requestError != null)
+				{
+					cb(requestError, null);
+					return;
+				}
 
-					// Deserialize the JSON response
-					JArray responseArray;
-					try
-					{
-						responseArray = JArray.Parse(responseString);
-					}
-					catch (Exception parseError)
-					{
-						cb(parseError, null);
-						return;
-					}
+				// Deserialize the JSON response
+				JArray responseArray;
+				try
+				{
+					responseArray = JArray.Parse(responseString);
+				}
+				catch (Exception parseError)
+				{
+					cb(parseError, null);
+					return;
+				}
 
-					cb(null, responseArray);
-				});
+				cb(null, responseArray);
+			});
 		}
 
 		private void SendRequest(string postData, Dictionary<string, string> headers, CookieContainer cookies, Action<Exception, string> cb)
