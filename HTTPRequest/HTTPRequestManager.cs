@@ -3,22 +3,29 @@ using System.Collections.Generic;
 
 using Wizcorp.MageSDK.Utils;
 
-namespace Wizcorp.MageSDK.Network.Http {
-	public class HTTPRequestManager : MonoSingleton<HTTPRequestManager> {
+namespace Wizcorp.MageSDK.Network.Http
+{
+	public class HttpRequestManager : MonoSingleton<HttpRequestManager>
+	{
 		//
 		private static List<IEnumerator> queued = new List<IEnumerator>();
 
 		//
-		public static void Queue(IEnumerator coroutine) {
-			lock ((object)queued) {
+		public static void Queue(IEnumerator coroutine)
+		{
+			lock ((object)queued)
+			{
 				queued.Add(coroutine);
 			}
 		}
 
 		//
-		void Update() {
-			lock ((object)queued) {
-				for (int i = 0; i < queued.Count; i += 1) {
+		void Update()
+		{
+			lock ((object)queued)
+			{
+				for (var i = 0; i < queued.Count; i += 1)
+				{
 					StartCoroutine(queued[i]);
 				}
 

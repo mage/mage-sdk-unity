@@ -10,8 +10,10 @@ using System.IO;
 using System.Text;
 using System.Threading;
 
-namespace Wizcorp.MageSDK.Network.Http {
-	public class HTTPRequest {
+namespace Wizcorp.MageSDK.Network.Http
+{
+	public class HttpRequest
+	{
 		private HttpWebRequest request;
 		private CookieContainer cookies;
 		private Action<Exception, string> cb;
@@ -19,11 +21,14 @@ namespace Wizcorp.MageSDK.Network.Http {
 
 		// Timeout setting for request
 		private long _timeout = 100 * 1000;
-		public long timeout {
-			get {
+		public long timeout
+		{
+			get
+			{
 				return _timeout;
 			}
-			set {
+			set
+			{
 				_timeout = value;
 
 				timeoutTimer.Dispose();
@@ -36,7 +41,8 @@ namespace Wizcorp.MageSDK.Network.Http {
 
 
 		// Constructor
-		public HTTPRequest(string url, string contentType, byte[] postData, Dictionary<string, string> headers, CookieContainer cookies, Action<Exception, string> cb) {
+		public HttpRequest(string url, string contentType, byte[] postData, Dictionary<string, string> headers, CookieContainer cookies, Action<Exception, string> cb)
+		{
 			// Start timeout timer
 			timeoutTimer = new Timer((object state) => {
 				this.Abort();
@@ -48,19 +54,23 @@ namespace Wizcorp.MageSDK.Network.Http {
 			httpRequest.Method = (postData != null) ? WebRequestMethods.Http.Post : WebRequestMethods.Http.Get;
 
 			// Set request headers
-			if (headers != null) {
-				foreach (KeyValuePair<string, string> entry in headers) {
+			if (headers != null)
+			{
+				foreach (KeyValuePair<string, string> entry in headers)
+				{
 					httpRequest.Headers.Add(entry.Key, entry.Value);
 				}
 			}
 
 			// Set content type if provided
-			if (contentType != null) {
+			if (contentType != null)
+			{
 				httpRequest.ContentType = contentType;
 			}
 
 			// Set cookies if provided
-			if (cookies != null) {
+			if (cookies != null)
+			{
 				httpRequest.CookieContainer = cookies;
 			}
 
@@ -70,12 +80,16 @@ namespace Wizcorp.MageSDK.Network.Http {
 			this.request = httpRequest;
 
 			// Initiate response
-			if (postData == null) {
+			if (postData == null)
+			{
 				ReadResponseData(cb);
 				return;
-			} else {
+			}
+			else
+			{
 				WritePostData(postData, (Exception requestError) => {
-					if (requestError != null) {
+					if (requestError != null)
+					{
 						cb(requestError, null);
 						return;
 					}
@@ -89,13 +103,17 @@ namespace Wizcorp.MageSDK.Network.Http {
 
 
 		// Write post data to request buffer
-		private void WritePostData(byte[] postData, Action<Exception> cb) {
+		private void WritePostData(byte[] postData, Action<Exception> cb)
+		{
 			request.BeginGetRequestStream((IAsyncResult callbackResult) => {
-				try {
+				try
+				{
 					Stream postStream = request.EndGetRequestStream(callbackResult);
 					postStream.Write(postData, 0, postData.Length);
 					postStream.Close();
-				} catch (Exception error) {
+				}
+				catch (Exception error)
+				{
 					cb(error);
 					return;
 				}
@@ -104,7 +122,8 @@ namespace Wizcorp.MageSDK.Network.Http {
 		}
 
 		// Read response data from request buffer
-		private void ReadResponseData(Action<Exception, string> cb) {
+		private void ReadResponseData(Action<Exception, string> cb)
+		{
 			// Begin waiting for a response
 			request.BeginGetResponse(new AsyncCallback((IAsyncResult callbackResult) => {
 				// Cleanup timeout
@@ -113,15 +132,19 @@ namespace Wizcorp.MageSDK.Network.Http {
 
 				// Process response
 				string responseString = null;
-				try {
+				try
+				{
 					HttpWebResponse response = (HttpWebResponse)request.EndGetResponse(callbackResult);
 
-					using (StreamReader httpWebStreamReader = new StreamReader(response.GetResponseStream())) {
+					using (StreamReader httpWebStreamReader = new StreamReader(response.GetResponseStream()))
+					{
 						responseString = httpWebStreamReader.ReadToEnd();
 					}
 
 					response.Close();
-				} catch (Exception error) {
+				}
+				catch (Exception error)
+				{
 					cb(error, null);
 					return;
 				}
@@ -132,8 +155,10 @@ namespace Wizcorp.MageSDK.Network.Http {
 
 
 		// Abort request
-		public void Abort() {
-			if (request == null) {
+		public void Abort()
+		{
+			if (request == null)
+			{
 				return;
 			}
 
@@ -147,21 +172,24 @@ namespace Wizcorp.MageSDK.Network.Http {
 
 
 		// Create GET request and return it
-		public static HTTPRequest Get(string url, Dictionary<string, string> headers, CookieContainer cookies, Action<Exception, string> cb) {
+		public static HttpRequest Get(string url, Dictionary<string, string> headers, CookieContainer cookies, Action<Exception, string> cb)
+		{
 			// Create request and return it
 			// The callback will be called when the request is complete
-			return new HTTPRequest(url, null, null, headers, cookies, cb);
+			return new HttpRequest(url, null, null, headers, cookies, cb);
 		}
 
 		// Create POST request and return it
-		public static HTTPRequest Post(string url, string contentType, string postData, Dictionary<string, string> headers, CookieContainer cookies, Action<Exception, string> cb) {
+		public static HttpRequest Post(string url, string contentType, string postData, Dictionary<string, string> headers, CookieContainer cookies, Action<Exception, string> cb)
+		{
 			byte[] binaryPostData = Encoding.UTF8.GetBytes(postData);
 			return Post(url, contentType, binaryPostData, headers, cookies, cb);
 		}
 
 		// Create POST request and return it
-		public static HTTPRequest Post(string url, string contentType, byte[] postData, Dictionary<string, string> headers, CookieContainer cookies, Action<Exception, string> cb) {
-			return new HTTPRequest(url, contentType, postData, headers, cookies, cb);
+		public static HttpRequest Post(string url, string contentType, byte[] postData, Dictionary<string, string> headers, CookieContainer cookies, Action<Exception, string> cb)
+		{
+			return new HttpRequest(url, contentType, postData, headers, cookies, cb);
 		}
 	}
 }

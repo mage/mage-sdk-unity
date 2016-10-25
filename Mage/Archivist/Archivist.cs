@@ -6,48 +6,58 @@ using Newtonsoft.Json.Linq;
 using Wizcorp.MageSDK.Event;
 using Wizcorp.MageSDK.Log;
 
-namespace Wizcorp.MageSDK.MageClient {
-	public class Archivist : EventEmitter<VaultValue> {
-		private Mage mage { get { return Mage.Instance; } }
-		private Logger logger { get { return mage.logger("archivist"); } }
+namespace Wizcorp.MageSDK.MageClient
+{
+	public class Archivist : EventEmitter<VaultValue>
+	{
+		private Mage Mage
+		{
+			get { return Mage.Instance; }
+		}
+
+		private Logger Logger
+		{
+			get { return Mage.Logger("Archivist"); }
+		}
 
 		// Local cache of all retrieved vault values
-		private Dictionary<string, VaultValue> _cache = new Dictionary<string, VaultValue>();
+		private Dictionary<string, VaultValue> cache = new Dictionary<string, VaultValue>();
 
 
 		// Constructor
-		public Archivist() {
+		public Archivist()
+		{
 			// Set data to vault value when set event received
-			mage.eventManager.on("archivist:set", (object sender, JToken info) => {
-				string topic = (string)info["key"]["topic"];
-				JObject index = (JObject)info["key"]["index"];
+			Mage.EventManager.On("archivist:set", (sender, info) => {
+				var topic = (string)info["key"]["topic"];
+				var index = (JObject)info["key"]["index"];
 				JToken data = info["value"]["data"];
-				string mediaType = (string)info["value"]["mediaType"];
-				int? expirationTime = (int?)info["expirationTime"];
+				var mediaType = (string)info["value"]["mediaType"];
+				var expirationTime = (int?)info["expirationTime"];
 				ValueSet(topic, index, data, mediaType, expirationTime);
 			});
 
 			// Del data inside vault value when del event received
-			mage.eventManager.on("archivist:del", (object sender, JToken info) => {
-				string topic = (string)info["key"]["topic"];
-				JObject index = (JObject)info["key"]["index"];
+			Mage.EventManager.On("archivist:del", (sender, info) => {
+				var topic = (string)info["key"]["topic"];
+				var index = (JObject)info["key"]["index"];
 				ValueDel(topic, index);
 			});
 
 			// Touch vault value expiry when touch event received
-			mage.eventManager.on("archivist:touch", (object sender, JToken info) => {
-				string topic = (string)info["key"]["topic"];
-				JObject index = (JObject)info["key"]["index"];
-				int? expirationTime = (int?)info["expirationTime"];
+			Mage.EventManager.On("archivist:touch", (sender, info) => {
+				var topic = (string)info["key"]["topic"];
+				var index = (JObject)info["key"]["index"];
+				var expirationTime = (int?)info["expirationTime"];
 				ValueTouch(topic, index, expirationTime);
 			});
 
 			// Apply changes to vault value when applyDiff event is received
-			mage.eventManager.on("archivist:applyDiff", (object sender, JToken info) => {
-				string topic = (string)info["key"]["topic"];
-				JObject index = (JObject)info["key"]["index"];
-				JArray diff = (JArray)info["diff"];
-				int? expirationTime = (int?)info["expirationTime"];
+			Mage.EventManager.On("archivist:applyDiff", (sender, info) => {
+				var topic = (string)info["key"]["topic"];
+				var index = (JObject)info["key"]["index"];
+				var diff = (JArray)info["diff"];
+				var expirationTime = (int?)info["expirationTime"];
 				ValueApplyDiff(topic, index, diff, expirationTime);
 			});
 		}
@@ -58,20 +68,23 @@ namespace Wizcorp.MageSDK.MageClient {
 		////////////////////////////////////////////
 
 		// Returns string id of a vault value for given topic and index
-		private static string CreateCacheKey(string topic, JObject index) {
+		private static string CreateCacheKey(string topic, JObject index)
+		{
 			// Sort the keys so order of index is always the same
-			List<string> indexKeys = new List<string>();
-			foreach (var property in index) {
+			var indexKeys = new List<string>();
+			foreach (KeyValuePair<string, JToken> property in index)
+			{
 				indexKeys.Add(property.Key);
 			}
 			indexKeys.Sort();
 
 			// Construct cache key list with correct ordering
-			List<string> cacheKeys = new List<string>();
+			var cacheKeys = new List<string>();
 			cacheKeys.Add(topic);
 
-			foreach (string indexKey in indexKeys) {
-				cacheKeys.Add(indexKey + "=" + index[indexKey].ToString());
+			foreach (string indexKey in indexKeys)
+			{
+				cacheKeys.Add(indexKey + "=" + index[indexKey]);
 			}
 
 			// Join the cache key list into final key string
@@ -80,15 +93,19 @@ namespace Wizcorp.MageSDK.MageClient {
 
 
 		// Returns cache value if it exists and has not passed max allowed age
-		private VaultValue GetCacheValue(string cacheKeyName, int? maxAge = null) {
-			lock ((object)_cache) {
-				if (!_cache.ContainsKey(cacheKeyName)) {
+		private VaultValue GetCacheValue(string cacheKeyName, int? maxAge = null)
+		{
+			lock ((object)cache)
+			{
+				if (!cache.ContainsKey(cacheKeyName))
+				{
 					return null;
 				}
 
-				VaultValue value = _cache[cacheKeyName];
-				double timespan = (DateTime.UtcNow - value.writtenAt).TotalMilliseconds;
-				if (maxAge != null && timespan > maxAge * 1000) {
+				VaultValue value = cache[cacheKeyName];
+				double timespan = (DateTime.UtcNow - value.WrittenAt).TotalMilliseconds;
+				if (maxAge != null && timespan > maxAge * 1000)
+				{
 					return null;
 				}
 
@@ -98,34 +115,41 @@ namespace Wizcorp.MageSDK.MageClient {
 
 
 		// Return cache dictionary
-		public Dictionary<string, VaultValue> GetCache() {
-			return _cache;
+		public Dictionary<string, VaultValue> GetCache()
+		{
+			return cache;
 		}
 
 
 		// Clear out the cache entirely
-		public void ClearCache() {
-			lock ((object)_cache) {
-				_cache.Clear();
+		public void ClearCache()
+		{
+			lock ((object)cache)
+			{
+				cache.Clear();
 			}
 		}
 
 
 		// Remove a vault value from the cache by it's topic and index
-		public void DeleteCacheItem(string topic, JObject index) {
+		public void DeleteCacheItem(string topic, JObject index)
+		{
 			DeleteCacheItem(CreateCacheKey(topic, index));
 		}
 
 
 		// Remove a vault value from the cache by it's cache key name
-		public void DeleteCacheItem(string cacheKeyName) {
-			lock ((object)_cache) {
-				logger.debug("Deleting cache item: " + cacheKeyName);
-				if (!_cache.ContainsKey(cacheKeyName)) {
+		public void DeleteCacheItem(string cacheKeyName)
+		{
+			lock ((object)cache)
+			{
+				Logger.Debug("Deleting cache item: " + cacheKeyName);
+				if (!cache.ContainsKey(cacheKeyName))
+				{
 					return;
 				}
 
-				_cache.Remove(cacheKeyName);
+				cache.Remove(cacheKeyName);
 			}
 		}
 
@@ -133,31 +157,40 @@ namespace Wizcorp.MageSDK.MageClient {
 		////////////////////////////////////////////
 		//        Vault Value Manipulation        //
 		////////////////////////////////////////////
-		private void ValueSetOrDelete(JObject info) {
-			string topic = (string)info["key"]["topic"];
-			JObject index = (JObject)info["key"]["index"];
-			JObject rawValue = (JObject)info["value"];
+		private void ValueSetOrDelete(JObject info)
+		{
+			var topic = (string)info["key"]["topic"];
+			var index = (JObject)info["key"]["index"];
+			var rawValue = (JObject)info["value"];
 
-			if (rawValue != null) {
+			if (rawValue != null)
+			{
 				ValueSet(topic, index, rawValue["data"], (string)rawValue["mediaType"], (int?)info["expirationTime"]);
-			} else {
+			}
+			else
+			{
 				ValueDel(topic, index);
 			}
 		}
 
-		private void ValueSet(string topic, JObject index, JToken data, string mediaType, int? expirationTime) {
+		private void ValueSet(string topic, JObject index, JToken data, string mediaType, int? expirationTime)
+		{
 			string cacheKeyName = CreateCacheKey(topic, index);
-			VaultValue cacheValue = null;
+			VaultValue cacheValue;
 
 			// NOTE: even though some of these operations lock already, we put them inside this
 			// lock to ensure there is no time inconsistencies if things happen too fast.
-			lock ((object)_cache) {
+			lock ((object)cache)
+			{
 				cacheValue = GetCacheValue(cacheKeyName);
-				if (cacheValue == null) {
+				if (cacheValue == null)
+				{
 					// If it doesn't exist, create a new vault value
 					cacheValue = new VaultValue(topic, index);
-					_cache.Add(cacheKeyName, cacheValue);
-				} else {
+					cache.Add(cacheKeyName, cacheValue);
+				}
+				else
+				{
 					// If it exists delete existing value in preparation for set
 					cacheValue.Del();
 				}
@@ -168,26 +201,29 @@ namespace Wizcorp.MageSDK.MageClient {
 			}
 
 			// Emit set event
-			this.emit(topic + ":set", cacheValue);
+			Emit(topic + ":set", cacheValue);
 		}
 
-		private void ValueAdd(string topic, JObject index, JToken data, string mediaType, int? expirationTime) {
+		private void ValueAdd(string topic, JObject index, JToken data, string mediaType, int? expirationTime)
+		{
 			string cacheKeyName = CreateCacheKey(topic, index);
-			VaultValue cacheValue = null;
+			VaultValue cacheValue;
 
 			// NOTE: even though some of these operations lock already, we put them inside this
 			// lock to ensure there is no time inconsistencies if things happen too fast.
-			lock ((object)_cache) {
+			lock ((object)cache)
+			{
 				// Check if value already exists
 				cacheValue = GetCacheValue(cacheKeyName);
-				if (cacheValue != null) {
-					logger.error("Could not add value (already exists): " + cacheKeyName);
+				if (cacheValue != null)
+				{
+					Logger.Error("Could not add value (already exists): " + cacheKeyName);
 					return;
 				}
 
 				// Create new vault value
 				cacheValue = new VaultValue(topic, index);
-				_cache.Add(cacheKeyName, cacheValue);
+				cache.Add(cacheKeyName, cacheValue);
 
 				// Set data to vault value
 				cacheValue.SetData(mediaType, data);
@@ -195,15 +231,17 @@ namespace Wizcorp.MageSDK.MageClient {
 			}
 
 			// Emit add event
-			this.emit(topic + ":add", cacheValue);
+			Emit(topic + ":add", cacheValue);
 		}
 
-		private void ValueDel(string topic, JObject index) {
+		private void ValueDel(string topic, JObject index)
+		{
 			// Check if value already exists
 			string cacheKeyName = CreateCacheKey(topic, index);
 			VaultValue cacheValue = GetCacheValue(cacheKeyName);
-			if (cacheValue == null) {
-				logger.warning("Could not delete value (doesn't exist): " + cacheKeyName);
+			if (cacheValue == null)
+			{
+				Logger.Warning("Could not delete value (doesn't exist): " + cacheKeyName);
 				return;
 			}
 
@@ -211,15 +249,17 @@ namespace Wizcorp.MageSDK.MageClient {
 			cacheValue.Del();
 
 			// Emit touch event
-			this.emit(topic + ":del", cacheValue);
+			Emit(topic + ":del", cacheValue);
 		}
 
-		private void ValueTouch(string topic, JObject index, int? expirationTime) {
+		private void ValueTouch(string topic, JObject index, int? expirationTime)
+		{
 			// Check if value already exists
 			string cacheKeyName = CreateCacheKey(topic, index);
 			VaultValue cacheValue = GetCacheValue(cacheKeyName);
-			if (cacheValue == null) {
-				logger.warning("Could not touch value (doesn't exist): " + cacheKeyName);
+			if (cacheValue == null)
+			{
+				Logger.Warning("Could not touch value (doesn't exist): " + cacheKeyName);
 				return;
 			}
 
@@ -227,15 +267,17 @@ namespace Wizcorp.MageSDK.MageClient {
 			cacheValue.Touch(expirationTime);
 
 			// Emit touch event
-			this.emit(topic + ":touch", cacheValue);
+			Emit(topic + ":touch", cacheValue);
 		}
 
-		private void ValueApplyDiff(string topic, JObject index, JArray diff, int? expirationTime) {
+		private void ValueApplyDiff(string topic, JObject index, JArray diff, int? expirationTime)
+		{
 			// Make sure value exists
 			string cacheKeyName = CreateCacheKey(topic, index);
 			VaultValue cacheValue = GetCacheValue(cacheKeyName);
-			if (cacheValue == null) {
-				logger.warning("Got a diff for a non-existent value:" + cacheKeyName);
+			if (cacheValue == null)
+			{
+				Logger.Warning("Got a diff for a non-existent value:" + cacheKeyName);
 				return;
 			}
 
@@ -244,40 +286,44 @@ namespace Wizcorp.MageSDK.MageClient {
 			cacheValue.Touch(expirationTime);
 
 			// Emit applyDiff event
-			this.emit(topic + ":applyDiff", cacheValue);
+			Emit(topic + ":applyDiff", cacheValue);
 		}
 
 
 		////////////////////////////////////////////
 		//            Raw Communication           //
 		////////////////////////////////////////////
-		private void rawGet(string topic, JObject index, Action<Exception, JToken> cb) {
-			JObject parameters = new JObject();
+		private void RawGet(string topic, JObject index, Action<Exception, JToken> cb)
+		{
+			var parameters = new JObject();
 			parameters.Add("topic", topic);
 			parameters.Add("index", index);
 
-			mage.commandCenter.SendCommand("archivist.rawGet", parameters, cb);
+			Mage.CommandCenter.SendCommand("archivist.rawGet", parameters, cb);
 		}
 
-		private void rawMGet(JToken queries, JObject options, Action<Exception, JToken> cb) {
-			JObject parameters = new JObject();
+		private void RawMGet(JToken queries, JObject options, Action<Exception, JToken> cb)
+		{
+			var parameters = new JObject();
 			parameters.Add(new JProperty("queries", queries));
 			parameters.Add("options", options);
 
-			mage.commandCenter.SendCommand("archivist.rawMGet", parameters, cb);
+			Mage.CommandCenter.SendCommand("archivist.rawMGet", parameters, cb);
 		}
 
-		private void rawList(string topic, JObject partialIndex, JObject options, Action<Exception, JToken> cb) {
-			JObject parameters = new JObject();
+		private void RawList(string topic, JObject partialIndex, JObject options, Action<Exception, JToken> cb)
+		{
+			var parameters = new JObject();
 			parameters.Add("topic", new JValue(topic));
 			parameters.Add("partialIndex", partialIndex);
 			parameters.Add("options", options);
 
-			mage.commandCenter.SendCommand("archivist.rawList", parameters, cb);
+			Mage.CommandCenter.SendCommand("archivist.rawList", parameters, cb);
 		}
 
-		private void rawSet(string topic, JObject index, JToken data, string mediaType, string encoding, string expirationTime, Action<Exception, JToken> cb) {
-			JObject parameters = new JObject();
+		private void RawSet(string topic, JObject index, JToken data, string mediaType, string encoding, string expirationTime, Action<Exception, JToken> cb)
+		{
+			var parameters = new JObject();
 			parameters.Add("topic", new JValue(topic));
 			parameters.Add("index", index);
 			parameters.Add(new JProperty("data", data));
@@ -285,25 +331,28 @@ namespace Wizcorp.MageSDK.MageClient {
 			parameters.Add("encoding", new JValue(encoding));
 			parameters.Add("expirationTime", new JValue(expirationTime));
 
-			mage.commandCenter.SendCommand("archivist.rawSet", parameters, cb);
+			Mage.CommandCenter.SendCommand("archivist.rawSet", parameters, cb);
 		}
 
-		private void rawDel(string topic, JObject index, Action<Exception, JToken> cb) {
-			JObject parameters = new JObject();
+		private void RawDel(string topic, JObject index, Action<Exception, JToken> cb)
+		{
+			var parameters = new JObject();
 			parameters.Add("topic", new JValue(topic));
 			parameters.Add("index", index);
 
-			mage.commandCenter.SendCommand("archivist.rawDel", parameters, cb);
+			Mage.CommandCenter.SendCommand("archivist.rawDel", parameters, cb);
 		}
 
 
 		////////////////////////////////////////////
 		//           Exposed Operations           //
 		////////////////////////////////////////////
-		public void get(string topic, JObject index, JObject options, Action<Exception, JToken> cb) {
+		public void Get(string topic, JObject index, JObject options, Action<Exception, JToken> cb)
+		{
 			// Default options
 			options = (options != null) ? options : new JObject();
-			if (options["optional"] == null) {
+			if (options["optional"] == null)
+			{
 				options.Add("optional", new JValue(false));
 			}
 
@@ -311,55 +360,66 @@ namespace Wizcorp.MageSDK.MageClient {
 			// Check cache
 			string cacheKeyName = CreateCacheKey(topic, index);
 			VaultValue cacheValue = GetCacheValue(cacheKeyName, (int?)options["maxAge"]);
-			if (cacheValue != null) {
-				cb(null, cacheValue.data);
+			if (cacheValue != null)
+			{
+				cb(null, cacheValue.Data);
 				return;
 			}
 
 
 			// Get data from server
-			rawGet(topic, index, (Exception error, JToken result) => {
-				if (error != null) {
+			RawGet(topic, index, (error, result) => {
+				if (error != null)
+				{
 					cb(error, null);
 					return;
 				}
 
 				// Parse value
-				try {
+				try
+				{
 					ValueSetOrDelete((JObject)result);
-				} catch (Exception cacheError) {
+				}
+				catch (Exception cacheError)
+				{
 					cb(cacheError, null);
 					return;
 				}
 
 				// Return result
-				cb(null, GetCacheValue(cacheKeyName).data);
+				cb(null, GetCacheValue(cacheKeyName).Data);
 			});
 		}
 
-		public void mget(JArray queries, JObject options, Action<Exception, JToken> cb) {
+		public void MGet(JArray queries, JObject options, Action<Exception, JToken> cb)
+		{
 			// Default options
 			options = (options != null) ? options : new JObject();
-			if (options["optional"] == null) {
+			if (options["optional"] == null)
+			{
 				options.Add("optional", new JValue(false));
 			}
 
 
 			// Keep track of actual data we need from server
-			JArray realQueries = new JArray();
-			Dictionary<string, int> realQueryKeys = new Dictionary<string, int>();
-			JArray responseArray = new JArray();
+			var realQueries = new JArray();
+			var realQueryKeys = new Dictionary<string, int>();
+			var responseArray = new JArray();
 
 
 			// Check cache
-			foreach (JObject query in queries) {
-				string topic = (string)query["topic"];
-				JObject index = (JObject)query["index"];
+			foreach (JObject query in queries)
+			{
+				var topic = (string)query["topic"];
+				var index = (JObject)query["index"];
 				string cacheKeyName = CreateCacheKey(topic, index);
 				VaultValue cacheValue = GetCacheValue(cacheKeyName, (int?)options["maxAge"]);
-				if (cacheValue != null) {
-					responseArray.Add(cacheValue.data);
-				} else {
+				if (cacheValue != null)
+				{
+					responseArray.Add(cacheValue.Data);
+				}
+				else
+				{
 					realQueryKeys.Add(cacheKeyName, responseArray.Count);
 					responseArray.Add(null);
 					realQueries.Add(query);
@@ -368,24 +428,34 @@ namespace Wizcorp.MageSDK.MageClient {
 
 
 			// Check if any real queries exist
-			if (realQueries.Count == 0) {
+			if (realQueries.Count == 0)
+			{
 				cb(null, responseArray);
 				return;
 			}
 
 
 			// Get data from server
-			rawMGet(realQueries, options, (Exception error, JToken results) => {
-				if (error != null) {
+			RawMGet(realQueries, options, (error, results) => {
+				if (error != null)
+				{
 					cb(error, null);
 					return;
 				}
 
-				try {
-					foreach (JObject topicValue in results as JArray) {
+				try
+				{
+					var resultsArray = results as JArray;
+					if (resultsArray == null)
+					{
+						throw new Exception("RawMGet returned non Array results: " + results);
+					}
+
+					foreach (JObject topicValue in resultsArray)
+					{
 						// Determine value cacheKeyName
-						string topic = (string)topicValue["key"]["topic"];
-						JObject index = (JObject)topicValue["key"]["index"];
+						var topic = (string)topicValue["key"]["topic"];
+						var index = (JObject)topicValue["key"]["index"];
 						string cacheKeyName = CreateCacheKey(topic, index);
 
 						// Set value to cache
@@ -393,9 +463,11 @@ namespace Wizcorp.MageSDK.MageClient {
 
 						// Add value to response
 						int responseKey = realQueryKeys[cacheKeyName];
-						responseArray[responseKey].Replace(GetCacheValue(cacheKeyName).data);
+						responseArray[responseKey].Replace(GetCacheValue(cacheKeyName).Data);
 					}
-				} catch (Exception cacheError) {
+				}
+				catch (Exception cacheError)
+				{
 					cb(cacheError, null);
 					return;
 				}
@@ -405,27 +477,33 @@ namespace Wizcorp.MageSDK.MageClient {
 			});
 		}
 
-		public void mget(JObject queries, JObject options, Action<Exception, JToken> cb) {
+		public void MGet(JObject queries, JObject options, Action<Exception, JToken> cb)
+		{
 			// Default options
 			options = (options != null) ? options : new JObject();
-			if (options["optional"] == null) {
+			if (options["optional"] == null)
+			{
 				options.Add("optional", new JValue(false));
 			}
 
 
 			// Keep track of actual data we need from server
-			JObject realQueries = new JObject();
-			Dictionary<string, string> realQueryKeys = new Dictionary<string, string>();
-			JObject responseObject = new JObject();
+			var realQueries = new JObject();
+			var realQueryKeys = new Dictionary<string, string>();
+			var responseObject = new JObject();
 
 
 			// Check cache
-			foreach (var query in queries) {
+			foreach (KeyValuePair<string, JToken> query in queries)
+			{
 				string cacheKeyName = CreateCacheKey(query.Value["topic"].ToString(), query.Value["index"] as JObject);
 				VaultValue cacheValue = GetCacheValue(cacheKeyName, (int?)options["maxAge"]);
-				if (cacheValue != null) {
-					responseObject.Add(query.Key, cacheValue.data);
-				} else {
+				if (cacheValue != null)
+				{
+					responseObject.Add(query.Key, cacheValue.Data);
+				}
+				else
+				{
 					realQueryKeys.Add(cacheKeyName, query.Key);
 					realQueries.Add(query.Key, query.Value);
 				}
@@ -433,24 +511,34 @@ namespace Wizcorp.MageSDK.MageClient {
 
 
 			// Check if any real queries exist
-			if (realQueries.Count == 0) {
+			if (realQueries.Count == 0)
+			{
 				cb(null, responseObject);
 				return;
 			}
 
 
 			// Get data from server
-			rawMGet(realQueries, options, (Exception error, JToken results) => {
-				if (error != null) {
+			RawMGet(realQueries, options, (error, results) => {
+				if (error != null)
+				{
 					cb(error, null);
 					return;
 				}
 
-				try {
-					foreach (JObject topicValue in results as JArray) {
+				try
+				{
+					var resultsArray = results as JArray;
+					if (resultsArray == null)
+					{
+						throw new Exception("RawMGet returned non Array results: " + results);
+					}
+
+					foreach (JObject topicValue in resultsArray)
+					{
 						// Determine value cacheKeyName
 						string valueTopic = topicValue["key"]["topic"].ToString();
-						JObject valueIndex = (JObject)topicValue["key"]["index"];
+						var valueIndex = (JObject)topicValue["key"]["index"];
 						string cacheKeyName = CreateCacheKey(valueTopic, valueIndex);
 
 						// Set value to cache
@@ -458,9 +546,11 @@ namespace Wizcorp.MageSDK.MageClient {
 
 						// Add value to response
 						string responseKey = realQueryKeys[cacheKeyName];
-						responseObject.Add(responseKey, GetCacheValue(cacheKeyName).data);
+						responseObject.Add(responseKey, GetCacheValue(cacheKeyName).Data);
 					}
-				} catch (Exception cacheError) {
+				}
+				catch (Exception cacheError)
+				{
 					cb(cacheError, null);
 					return;
 				}
@@ -470,8 +560,9 @@ namespace Wizcorp.MageSDK.MageClient {
 			});
 		}
 
-		public void list(string topic, JObject partialIndex, JObject options, Action<Exception, JToken> cb) {
-			rawList(topic, partialIndex, options, cb);
+		public void List(string topic, JObject partialIndex, JObject options, Action<Exception, JToken> cb)
+		{
+			RawList(topic, partialIndex, options, cb);
 		}
 	}
 }

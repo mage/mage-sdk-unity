@@ -3,20 +3,24 @@ using System.Collections.Generic;
 
 using Newtonsoft.Json.Linq;
 
-namespace Wizcorp.MageSDK.MageClient.Command {
-	public class CommandBatch {
-		public int queryId;
-		public List<Dictionary<string, string>> batchHeaders = new List<Dictionary<string, string>>();
-		public List<CommandBatchItem> batchItems = new List<CommandBatchItem>();
+namespace Wizcorp.MageSDK.MageClient.Command
+{
+	public class CommandBatch
+	{
+		public int QueryId;
+		public List<Dictionary<string, string>> BatchHeaders = new List<Dictionary<string, string>>();
+		public List<CommandBatchItem> BatchItems = new List<CommandBatchItem>();
 
-		public object serialisedCache;
+		public Object SerialisedCache;
 
-		public CommandBatch(int queryId) {
-			this.queryId = queryId;
+		public CommandBatch(int queryId)
+		{
+			QueryId = queryId;
 		}
 
-		public void Queue(string commandName, JObject parameters, Action<Exception, JToken> cb) {
-			batchItems.Add(new CommandBatchItem(commandName, parameters, cb));
+		public void Queue(string commandName, JObject parameters, Action<Exception, JToken> cb)
+		{
+			BatchItems.Add(new CommandBatchItem(commandName, parameters, cb));
 		}
 	}
 }

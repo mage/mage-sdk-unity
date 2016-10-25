@@ -2,60 +2,73 @@
 
 using UnityEditor;
 
-namespace Wizcorp.MageSDK.Editor {
-	public enum EditorPlayModeState {
-		Stopped,
-		Playing,
-		Paused
-	}
-
+namespace Wizcorp.MageSDK.Unity
+{
 	[InitializeOnLoad]
-	public class UnityEditorPlayMode {
+	public static class UnityEditorPlayMode
+	{
 		private static EditorPlayModeState currentState = EditorPlayModeState.Stopped;
-		public delegate void OnEditorModeChanged(EditorPlayModeState newState);
-		public static OnEditorModeChanged onEditorModeChanged;
+		public delegate void EditorModeChanged(EditorPlayModeState newState);
+		public static EditorModeChanged OnEditorModeChanged;
 
-		static UnityEditorPlayMode() {
+		static UnityEditorPlayMode()
+		{
 			EditorApplication.playmodeStateChanged += OnUnityPlayModeChanged;
-			if (EditorApplication.isPaused) {
+			if (EditorApplication.isPaused)
+			{
 				currentState = EditorPlayModeState.Paused;
 			}
 		}
 
-		private static void OnUnityPlayModeChanged() {
-			EditorPlayModeState newState = EditorPlayModeState.Stopped;
-			switch (currentState) {
+		private static void OnUnityPlayModeChanged()
+		{
+			var newState = EditorPlayModeState.Stopped;
+			switch (currentState)
+			{
 				case EditorPlayModeState.Stopped:
-					if (EditorApplication.isPlayingOrWillChangePlaymode) {
+					if (EditorApplication.isPlayingOrWillChangePlaymode)
+					{
 						newState = EditorPlayModeState.Playing;
-					} else {
+					}
+					else
+					{
 						newState = EditorPlayModeState.Paused;
 					}
 					break;
 				case EditorPlayModeState.Playing:
-					if (EditorApplication.isPaused) {
+					if (EditorApplication.isPaused)
+					{
 						newState = EditorPlayModeState.Paused;
-					} else if (EditorApplication.isPlaying) {
+					}
+					else if (EditorApplication.isPlaying)
+					{
 						newState = EditorPlayModeState.Playing;
-					} else {
+					}
+					else
+					{
 						newState = EditorPlayModeState.Stopped;
 					}
 					break;
 				case EditorPlayModeState.Paused:
-					if (EditorApplication.isPlayingOrWillChangePlaymode && !EditorApplication.isPaused) {
+					if (EditorApplication.isPlayingOrWillChangePlaymode && !EditorApplication.isPaused)
+					{
 						newState = EditorPlayModeState.Playing;
-					} else if (EditorApplication.isPlayingOrWillChangePlaymode && EditorApplication.isPaused) {
+					}
+					else if (EditorApplication.isPlayingOrWillChangePlaymode && EditorApplication.isPaused)
+					{
 						newState = EditorPlayModeState.Paused;
 					}
 					break;
 			}
 
-			if (onEditorModeChanged != null) {
-				onEditorModeChanged.Invoke(newState);
+			if (OnEditorModeChanged != null)
+			{
+				OnEditorModeChanged.Invoke(newState);
 			}
 
 			currentState = newState;
 		}
 	}
 }
+
 #endif

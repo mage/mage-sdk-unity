@@ -1,77 +1,90 @@
-namespace Wizcorp.MageSDK.Log {
-	public class LogEntry {
+namespace Wizcorp.MageSDK.Log
+{
+	public class LogEntry
+	{
 		//
-		public string channel;
-		public string context;
-		public object data;
-		public string message;
+		public string Channel;
+		public string Context;
+		public object Data;
+		public string Message;
 
-		public LogEntry(string context, object data = null) {
-			this.context = context;
-			this.data = data;
-		}
-
-
-		//
-		private void emitLog() {
-			Logger.logEmitter.emit("log", this);
-			Logger.logEmitter.emit("log:" + this.channel, this);
+		public LogEntry(string context, object data = null)
+		{
+			Context = context;
+			Data = data;
 		}
 
 
 		//
-		public void verbose(string message) {
-			this.channel = "verbose";
-			this.message = message;
-			emitLog();
+		private void EmitLog()
+		{
+			Logger.LogEmitter.Emit("log", this);
+			Logger.LogEmitter.Emit("log:" + Channel, this);
 		}
 
-		public void debug(string message) {
-			this.channel = "debug";
-			this.message = message;
-			emitLog();
+
+		//
+		public void Verbose(string message)
+		{
+			Channel = "verbose";
+			Message = message;
+			EmitLog();
 		}
 
-		public void info(string message) {
-			this.channel = "info";
-			this.message = message;
-			emitLog();
+		public void Debug(string message)
+		{
+			Channel = "debug";
+			Message = message;
+			EmitLog();
 		}
 
-		public void notice(string message) {
-			this.channel = "notice";
-			this.message = message;
-			emitLog();
+		public void Info(string message)
+		{
+			Channel = "info";
+			Message = message;
+			EmitLog();
 		}
 
-		public void warning(string message) {
-			this.channel = "warning";
-			this.message = message;
-			emitLog();
+		public void Notice(string message)
+		{
+			Channel = "notice";
+			Message = message;
+			EmitLog();
 		}
 
-		public void error(string message) {
-			this.channel = "error";
-			this.message = message;
-			emitLog();
+		public void Warning(string message)
+		{
+			Channel = "warning";
+			Message = message;
+			EmitLog();
 		}
 
-		public void critical(string message) {
-			this.channel = "critical";
-			this.message = message;
-			emitLog();
+		public void Error(string message)
+		{
+			Channel = "error";
+			Message = message;
+			EmitLog();
 		}
 
-		public void alert(string message) {
-			this.channel = "alert";
-			this.message = message;
-			emitLog();
+		public void Critical(string message)
+		{
+			Channel = "critical";
+			Message = message;
+			EmitLog();
 		}
 
-		public void emergency(string message) {
-			this.channel = "emergency";
-			this.message = message;
-			emitLog();
+		public void Alert(string message)
+		{
+			Channel = "alert";
+			Message = message;
+			EmitLog();
+		}
+
+		public void Emergency(string message)
+		{
+			Channel = "emergency";
+			Message = message;
+			EmitLog();
 		}
 	}
 }
