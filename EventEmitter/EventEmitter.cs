@@ -7,18 +7,17 @@ namespace Wizcorp.MageSDK.Event
 	public class EventEmitter<T>
 	{
 		//
-		private Dictionary<string, object> eventTags = new Dictionary<string, object>();
-		private EventHandlerList eventsList = new EventHandlerList();
+		private Dictionary<string, EventHandlerList> tagListMap = new Dictionary<string, EventHandlerList>();
 
 		//
 		public void On(string eventTag, Action<object, T> handler)
 		{
-			if (!eventTags.ContainsKey(eventTag))
+			if (!tagListMap.ContainsKey(eventTag))
 			{
-				eventTags.Add(eventTag, new object());
+				tagListMap.Add(eventTag, new EventHandlerList());
 			}
 
-			eventsList.AddHandler(eventTags[eventTag], handler);
+			tagListMap[eventTag].AddHandler(null, handler);
 		}
 
 		//
@@ -26,7 +25,7 @@ namespace Wizcorp.MageSDK.Event
 		{
 			Action<object, T> handlerWrapper = null;
 			handlerWrapper = (obj, arguments) => {
-				eventsList.RemoveHandler(eventTags[eventTag], handlerWrapper);
+				tagListMap[eventTag].RemoveHandler(null, handlerWrapper);
 				handler(obj, arguments);
 			};
 
@@ -36,12 +35,12 @@ namespace Wizcorp.MageSDK.Event
 		//
 		public void Emit(string eventTag, object sender, T arguments)
 		{
-			if (!eventTags.ContainsKey(eventTag))
+			if (!tagListMap.ContainsKey(eventTag))
 			{
 				return;
 			}
 
-			var execEventList = (Action<object, T>)eventsList[eventTags[eventTag]];
+			var execEventList = (Action<object, T>)tagListMap[eventTag][null];
 			if (execEventList != null)
 			{
 				execEventList(sender, arguments);
@@ -56,23 +55,35 @@ namespace Wizcorp.MageSDK.Event
 		//
 		public void Off(string eventTag, Action<object, T> handler)
 		{
-			if (!eventTags.ContainsKey(eventTag))
+			if (!tagListMap.ContainsKey(eventTag))
 			{
 				return;
 			}
 
-			eventsList.RemoveHandler(eventTags[eventTag], handler);
+			tagListMap[eventTag].RemoveHandler(null, handler);
+		}
+
+		//
+		public void RemoveTagListeners(string eventTag)
+		{
+			if (!tagListMap.ContainsKey(eventTag))
+			{
+				return;
+			}
+
+			tagListMap[eventTag].Dispose();
+			tagListMap[eventTag] = new EventHandlerList();
 		}
 
 		//
 		public void RemoveAllListeners()
 		{
-			// Destroy all event handlers
-			eventsList.Dispose();
-			eventsList = new EventHandlerList();
+			foreach (KeyValuePair<string, EventHandlerList> entry in tagListMap)
+			{
+				entry.Value.Dispose();
+			}
 
-			// Destroy all event tags
-			eventTags = new Dictionary<string, object>();
+			tagListMap = new Dictionary<string, EventHandlerList>();
 		}
 	}
 }
