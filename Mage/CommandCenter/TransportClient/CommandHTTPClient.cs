@@ -33,7 +33,7 @@ namespace Wizcorp.MageSDK.Command.Client
 		public override void SetEndpoint(string baseUrl, string appName, Dictionary<string, string> headers = null)
 		{
 			endpoint = baseUrl + "/" + appName;
-			headers = new Dictionary<string, string>(headers);
+			this.headers = new Dictionary<string, string>(headers);
 		}
 
 		//
