@@ -30,7 +30,7 @@ namespace Wizcorp.MageSDK.Tomes
 		//
 		private void EmitToParents(JToken oldValue)
 		{
-			if (!Equals(this, root))
+			if (!ReferenceEquals(this, root))
 			{
 				Tome.EmitParentChange(Parent);
 			}
