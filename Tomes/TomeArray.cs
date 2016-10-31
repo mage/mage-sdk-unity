@@ -31,7 +31,7 @@ namespace Wizcorp.MageSDK.Tomes
 			//
 			for (var i = 0; i < data.Count; i += 1)
 			{
-				Add(Tome.Conjure(data[i], root));
+				Add(Tome.Conjure(data[i], this.root));
 			}
 
 			//

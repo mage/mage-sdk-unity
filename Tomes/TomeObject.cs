@@ -32,7 +32,7 @@ namespace Wizcorp.MageSDK.Tomes
 			//
 			foreach (JProperty property in data.Properties())
 			{
-				Add(property.Name, Tome.Conjure(property.Value, root));
+				Add(property.Name, Tome.Conjure(property.Value, this.root));
 			}
 
 			//
