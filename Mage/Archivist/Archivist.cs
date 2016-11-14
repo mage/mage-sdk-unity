@@ -463,7 +463,11 @@ namespace Wizcorp.MageSDK.MageClient
 
 						// Add value to response
 						int responseKey = realQueryKeys[cacheKeyName];
-						responseArray[responseKey].Replace(GetCacheValue(cacheKeyName).Data);
+						var cacheValue = GetCacheValue(cacheKeyName);
+						if (cacheValue != null)
+						{
+							responseArray[responseKey].Replace(cacheValue.Data);
+						}
 					}
 				}
 				catch (Exception cacheError)
@@ -546,7 +550,11 @@ namespace Wizcorp.MageSDK.MageClient
 
 						// Add value to response
 						string responseKey = realQueryKeys[cacheKeyName];
-						responseObject.Add(responseKey, GetCacheValue(cacheKeyName).Data);
+						var cacheValue = GetCacheValue(cacheKeyName);
+						if (cacheValue != null)
+						{
+							responseObject.Add(responseKey, cacheValue.Data);
+						}
 					}
 				}
 				catch (Exception cacheError)
