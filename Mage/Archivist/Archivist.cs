@@ -157,7 +157,7 @@ namespace Wizcorp.MageSDK.MageClient
 		////////////////////////////////////////////
 		//        Vault Value Manipulation        //
 		////////////////////////////////////////////
-		private void ValueSetOrDelete(JObject info)
+		private void ValueSetOrNull(JObject info)
 		{
 			var topic = (string)info["key"]["topic"];
 			var index = (JObject)info["key"]["index"];
@@ -169,7 +169,7 @@ namespace Wizcorp.MageSDK.MageClient
 			}
 			else
 			{
-				ValueDel(topic, index);
+				ValueSet(topic, index, null, null, null);
 			}
 		}
 
@@ -378,7 +378,7 @@ namespace Wizcorp.MageSDK.MageClient
 				// Parse value
 				try
 				{
-					ValueSetOrDelete((JObject)result);
+					ValueSetOrNull((JObject)result);
 				}
 				catch (Exception cacheError)
 				{
@@ -459,15 +459,14 @@ namespace Wizcorp.MageSDK.MageClient
 						string cacheKeyName = CreateCacheKey(topic, index);
 
 						// Set value to cache
-						ValueSetOrDelete(topicValue);
+						ValueSetOrNull(topicValue);
 
 						// Add value to response
 						int responseKey = realQueryKeys[cacheKeyName];
 						var cacheValue = GetCacheValue(cacheKeyName);
-						if (cacheValue != null)
-						{
-							responseArray[responseKey].Replace(cacheValue.Data);
-						}
+						var value = (cacheValue != null) ? cacheValue.Data : null;
+
+						responseArray[responseKey].Replace(value);
 					}
 				}
 				catch (Exception cacheError)
@@ -546,15 +545,14 @@ namespace Wizcorp.MageSDK.MageClient
 						string cacheKeyName = CreateCacheKey(valueTopic, valueIndex);
 
 						// Set value to cache
-						ValueSetOrDelete(topicValue);
+						ValueSetOrNull(topicValue);
 
 						// Add value to response
 						string responseKey = realQueryKeys[cacheKeyName];
 						var cacheValue = GetCacheValue(cacheKeyName);
-						if (cacheValue != null)
-						{
-							responseObject.Add(responseKey, cacheValue.Data);
-						}
+						var value = (cacheValue != null) ? cacheValue.Data : null;
+
+						responseObject.Add(responseKey, value);
 					}
 				}
 				catch (Exception cacheError)
