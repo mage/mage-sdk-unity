@@ -157,7 +157,7 @@ namespace Wizcorp.MageSDK.MageClient
 		////////////////////////////////////////////
 		//        Vault Value Manipulation        //
 		////////////////////////////////////////////
-		private void ValueSetOrNull(JObject info)
+		private void ValueSetOrDelete(JObject info)
 		{
 			var topic = (string)info["key"]["topic"];
 			var index = (JObject)info["key"]["index"];
@@ -169,7 +169,7 @@ namespace Wizcorp.MageSDK.MageClient
 			}
 			else
 			{
-				ValueSet(topic, index, null, null, null);
+				ValueDel(topic, index);
 			}
 		}
 
@@ -238,15 +238,25 @@ namespace Wizcorp.MageSDK.MageClient
 		{
 			// Check if value already exists
 			string cacheKeyName = CreateCacheKey(topic, index);
-			VaultValue cacheValue = GetCacheValue(cacheKeyName);
-			if (cacheValue == null)
-			{
-				Logger.Warning("Could not delete value (doesn't exist): " + cacheKeyName);
-				return;
-			}
+			VaultValue cacheValue;
 
-			// Do delete
-			cacheValue.Del();
+			// NOTE: even though some of these operations lock already, we put them inside this
+			// lock to ensure there is no time inconsistencies if things happen too fast.
+			lock ((object)cache)
+			{
+				cacheValue = GetCacheValue(cacheKeyName);
+				if (cacheValue == null)
+				{
+					// If it doesn't exist, create a new vault value
+					cacheValue = new VaultValue(topic, index);
+					cache.Add(cacheKeyName, cacheValue);
+				}
+				else
+				{
+					// Do delete
+					cacheValue.Del();
+				}
+			}
 
 			// Emit touch event
 			Emit(topic + ":del", cacheValue);
@@ -378,7 +388,7 @@ namespace Wizcorp.MageSDK.MageClient
 				// Parse value
 				try
 				{
-					ValueSetOrNull((JObject)result);
+					ValueSetOrDelete((JObject)result);
 				}
 				catch (Exception cacheError)
 				{
@@ -459,14 +469,16 @@ namespace Wizcorp.MageSDK.MageClient
 						string cacheKeyName = CreateCacheKey(topic, index);
 
 						// Set value to cache
-						ValueSetOrNull(topicValue);
+						ValueSetOrDelete(topicValue);
 
 						// Add value to response
 						int responseKey = realQueryKeys[cacheKeyName];
 						var cacheValue = GetCacheValue(cacheKeyName);
-						var value = (cacheValue != null) ? cacheValue.Data : null;
 
-						responseArray[responseKey].Replace(value);
+						if (cacheValue != null)
+						{
+							responseArray[responseKey].Replace(cacheValue.Data);
+						}
 					}
 				}
 				catch (Exception cacheError)
@@ -545,14 +557,13 @@ namespace Wizcorp.MageSDK.MageClient
 						string cacheKeyName = CreateCacheKey(valueTopic, valueIndex);
 
 						// Set value to cache
-						ValueSetOrNull(topicValue);
+						ValueSetOrDelete(topicValue);
 
 						// Add value to response
 						string responseKey = realQueryKeys[cacheKeyName];
 						var cacheValue = GetCacheValue(cacheKeyName);
-						var value = (cacheValue != null) ? cacheValue.Data : null;
 
-						responseObject.Add(responseKey, value);
+						responseObject.Add(responseKey, (cacheValue != null) ? cacheValue.Data : null);
 					}
 				}
 				catch (Exception cacheError)
