@@ -11,6 +11,7 @@ using System.Text;
 using System.Reflection;
 
 using UnityEngine;
+using System.Threading;
 
 namespace Wizcorp.MageSDK.Network.Http
 {
@@ -145,19 +146,29 @@ namespace Wizcorp.MageSDK.Network.Http
 		// Abort request
 		public void Abort()
 		{
-			if (this.request == null)
+			if (request == null)
 			{
 				return;
 			}
 
-			WWW request = this.request;
-			this.request = null;
+			DisposeWWWInBackground(request);
+			request = null;
 
-			request.Dispose();
 			timeoutTimer.Stop();
 			timeoutTimer = null;
 		}
 
+		// Hack : I Feel bad for that ... I'm sorry but it's the faster way we found to fix an android bug
+		private void DisposeWWWInBackground(WWW www)
+		{
+			#if UNITY_ANDROID
+			new Thread(() => {
+				www.Dispose();
+			}).Start();
+			#else
+			www.Dispose();
+			#endif
+		}
 
 		// Create GET request and return it
 		public static HttpRequest Get(string url, Dictionary<string, string> headers, CookieContainer cookies, Action<Exception, string> cb)
