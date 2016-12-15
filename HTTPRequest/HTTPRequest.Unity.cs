@@ -79,7 +79,7 @@ namespace Wizcorp.MageSDK.Network.Http
 				{
 					// Timed out abort the request with timeout error
 					Abort();
-					cb(new HttpRequestException("Request timed out", 504), null);
+					cb(new HttpRequestException("Request timed out", 0), null);
 					yield break;
 				}
 
