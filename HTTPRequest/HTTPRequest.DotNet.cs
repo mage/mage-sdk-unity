@@ -46,7 +46,7 @@ namespace Wizcorp.MageSDK.Network.Http
 			// Start timeout timer
 			timeoutTimer = new Timer((object state) => {
 				this.Abort();
-				cb(new Exception("Request timed out"), null);
+				cb(new HttpRequestException("Request timed out", 504), null);
 			}, null, timeout, Timeout.Infinite);
 
 			// Initialize request instance
