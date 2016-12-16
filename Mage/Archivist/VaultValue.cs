@@ -32,7 +32,7 @@ namespace Wizcorp.MageSDK.MageClient
 				MediaType = mediaType;
 
 				// Set data based on media type
-				Data = Tome.Conjure(JToken.Parse((string)data));
+				Data = data != null ? Tome.Conjure(JToken.Parse((string)data)) : null;
 
 				// Bump the last written time
 				WrittenAt = DateTime.UtcNow;

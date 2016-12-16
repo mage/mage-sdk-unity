@@ -238,15 +238,25 @@ namespace Wizcorp.MageSDK.MageClient
 		{
 			// Check if value already exists
 			string cacheKeyName = CreateCacheKey(topic, index);
-			VaultValue cacheValue = GetCacheValue(cacheKeyName);
-			if (cacheValue == null)
-			{
-				Logger.Warning("Could not delete value (doesn't exist): " + cacheKeyName);
-				return;
-			}
+			VaultValue cacheValue;
 
-			// Do delete
-			cacheValue.Del();
+			// NOTE: even though some of these operations lock already, we put them inside this
+			// lock to ensure there is no time inconsistencies if things happen too fast.
+			lock ((object)cache)
+			{
+				cacheValue = GetCacheValue(cacheKeyName);
+				if (cacheValue == null)
+				{
+					// If it doesn't exist, create a new vault value
+					cacheValue = new VaultValue(topic, index);
+					cache.Add(cacheKeyName, cacheValue);
+				}
+				else
+				{
+					// Do delete
+					cacheValue.Del();
+				}
+			}
 
 			// Emit touch event
 			Emit(topic + ":del", cacheValue);
@@ -463,7 +473,12 @@ namespace Wizcorp.MageSDK.MageClient
 
 						// Add value to response
 						int responseKey = realQueryKeys[cacheKeyName];
-						responseArray[responseKey].Replace(GetCacheValue(cacheKeyName).Data);
+						var cacheValue = GetCacheValue(cacheKeyName);
+
+						if (cacheValue != null)
+						{
+							responseArray[responseKey].Replace(cacheValue.Data);
+						}
 					}
 				}
 				catch (Exception cacheError)
@@ -546,7 +561,9 @@ namespace Wizcorp.MageSDK.MageClient
 
 						// Add value to response
 						string responseKey = realQueryKeys[cacheKeyName];
-						responseObject.Add(responseKey, GetCacheValue(cacheKeyName).Data);
+						var cacheValue = GetCacheValue(cacheKeyName);
+
+						responseObject.Add(responseKey, (cacheValue != null) ? cacheValue.Data : null);
 					}
 				}
 				catch (Exception cacheError)
