@@ -121,7 +121,8 @@ namespace Wizcorp.MageSDK.MageClient
 			logger.Info("Setting up modules");
 			Async.Each(
 				moduleNames,
-				(moduleName, callback) => {
+				(moduleName, callback) =>
+				{
 					logger.Info("Setting up module: " + moduleName);
 
 					// Use reflection to find module by name
@@ -131,8 +132,8 @@ namespace Wizcorp.MageSDK.MageClient
 					{
 						if (moduleName == t.Name)
 						{
-							BindingFlags staticProperty = BindingFlags.Static | BindingFlags.GetProperty;
-							BindingFlags publicMethod = BindingFlags.Public | BindingFlags.InvokeMethod;
+							BindingFlags staticProperty = BindingFlags.InvokeMethod | BindingFlags.GetField | BindingFlags.GetProperty;
+							BindingFlags publicMethod = BindingFlags.Public | BindingFlags.InvokeMethod | BindingFlags.Instance;
 
 							// Grab module instance from singleton base
 							var singletonType = typeof(Singleton<>).MakeGenericType(t);
@@ -152,7 +153,8 @@ namespace Wizcorp.MageSDK.MageClient
 										moduleType.InvokeMember("SetupStaticData", publicMethod, null, instance, new object[] { callbackInner });
 									}
 								},
-								error => {
+								error =>
+								{
 									if (error != null)
 									{
 										callback(error);
@@ -180,7 +182,8 @@ namespace Wizcorp.MageSDK.MageClient
 					// If nothing found throw an error
 					callback(new Exception("Can't find module " + moduleName));
 				},
-				error => {
+				error =>
+				{
 					if (error != null)
 					{
 						logger.Data(error).Error("Setup failed!");
@@ -200,7 +203,8 @@ namespace Wizcorp.MageSDK.MageClient
 		{
 			// Execute async setup function
 			var setupStatus = new MageSetupStatus();
-			Setup(error => {
+			Setup(error =>
+			{
 				setupStatus.Error = error;
 				setupStatus.Done = true;
 			});
@@ -220,7 +224,8 @@ namespace Wizcorp.MageSDK.MageClient
 		{
 			// Execute async setup function
 			var setupStatus = new MageSetupStatus();
-			SetupModules(moduleNames, error => {
+			SetupModules(moduleNames, error =>
+			{
 				setupStatus.Error = error;
 				setupStatus.Done = true;
 			});
