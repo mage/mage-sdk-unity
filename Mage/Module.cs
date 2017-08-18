@@ -8,29 +8,45 @@ using Wizcorp.MageSDK.Utils;
 
 namespace Wizcorp.MageSDK.MageClient
 {
-
-	public class Module<T> : Singleton<T> where T : class, new()
+	using MageCommandAction = Action<JObject, Action<Exception, JToken>>;
+	using MageCommandFunction = Func<JObject, UserCommandStatus>;
+	
+	public abstract class Module<T> : Singleton<T> where T : class, new()	
 	{
-		//
+		// Tells us if the module was set up
+		private bool _SetupCompleted = false;
+		public bool SetupCompleted { 
+			get { return _SetupCompleted; }
+			private set { _SetupCompleted = value; }
+		}
+		
+
+		// Mage singleton accessor
 		protected Mage Mage
 		{
 			get { return Mage.Instance; }
 		}
 
+		// Contextualized logger
 		protected Logger Logger
 		{
 			get { return Mage.Logger(GetType().Name); }
 		}
 
-
-		//
+		// List of static topics to load during setup
 		protected virtual List<string> StaticTopics
 		{
 			get { return null; }
 		}
 
+		// Static data container
 		public JToken StaticData;
 
+		// Static data setup
+		//
+		// Note that topics are not tied to MAGE modules; they are
+		// essentially global to the MAGE server instance. This is 
+		// simply a convenience function for loading data at setup time.
 		public void SetupStaticData(Action<Exception> cb)
 		{
 			Logger.Info("Setting up static data");
@@ -67,28 +83,50 @@ namespace Wizcorp.MageSDK.MageClient
 		}
 
 
-		//
-		protected virtual string CommandPrefix
+		// The module name as defined on the remote MAGE server
+		protected abstract string CommandPrefix { get; }
+
+		// The list of available user commands on the remote MAGE server
+		protected abstract List<string> Commands { get; }
+
+		private Dictionary<string, MageCommandAction> commandHandlerActions;
+		private Dictionary<string, MageCommandFunction> commandHandlerFuncs;
+
+		private void AssertSetupCompleted() 
 		{
-			get { return null; }
+			if (SetupCompleted == false) 
+			{
+				throw new Exception("Module was not setup: " + CommandPrefix);
+			}
 		}
 
-		protected virtual List<string> Commands
-		{
-			get { return null; }
-		}
+		private M GetCommand<M>(Dictionary<string, M> list, string commandName) {
+			AssertSetupCompleted();
 
-		private Dictionary<string, Action<JObject, Action<Exception, JToken>>> commandHandlerActions;
-		private Dictionary<string, Func<JObject, UserCommandStatus>> commandHandlerFuncs;
+			if (list == null) {
+				throw new Exception("Module does not define any user commands: " + CommandPrefix);
+			}
+
+			var command = list[commandName];
+
+			if (command == null) 
+			{
+				throw new Exception("User command not found: " + CommandPrefix + "." + commandName);
+			}
+
+			return command;
+		}
 
 		public void Command(string commandName, JObject arguments, Action<Exception, JToken> cb)
 		{
-			commandHandlerActions[commandName](arguments, cb);
+			var action = GetCommand(commandHandlerActions, commandName);
+			action(arguments, cb);
 		}
 
 		public UserCommandStatus Command(string commandName, JObject arguments)
 		{
-			return commandHandlerFuncs[commandName](arguments);
+			var action = GetCommand(commandHandlerFuncs, commandName);
+			return action(arguments);
 		}
 
 		private void RegisterCommand(string command)
@@ -123,20 +161,21 @@ namespace Wizcorp.MageSDK.MageClient
 		{
 			Logger.Info("Setting up usercommands");
 
-			commandHandlerActions = new Dictionary<string, Action<JObject, Action<Exception, JToken>>>();
-			commandHandlerFuncs = new Dictionary<string, Func<JObject, UserCommandStatus>>();
-
-			if (Commands == null)
-			{
+			if (Commands == null) {
+				SetupCompleted = true;
 				cb(null);
 				return;
 			}
+
+			commandHandlerActions = new Dictionary<string, Action<JObject, Action<Exception, JToken>>>();
+			commandHandlerFuncs = new Dictionary<string, Func<JObject, UserCommandStatus>>();
 
 			foreach (string command in Commands)
 			{
 				RegisterCommand(command);
 			}
 
+			SetupCompleted = true;
 			cb(null);
 		}
 	}
