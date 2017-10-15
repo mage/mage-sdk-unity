@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Reflection;
 
 namespace Wizcorp.MageSDK.Log.Writers
 {
@@ -119,8 +120,10 @@ namespace Wizcorp.MageSDK.Log.Writers
 				return exception + ":\n" + exception.StackTrace;
 			}
 
-			// Otherwise log data as is using its toString function
-			return logData;
+			// Otherwise log data as is using its ToString function
+			Type objectType = logData.GetType();
+			MethodInfo toStringMethod = objectType.GetMethod("ToString");
+			return toStringMethod.Invoke(logData, null);
 		}
 
 		private void Verbose(object sender, LogEntry logEntry)
