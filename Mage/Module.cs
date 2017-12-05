@@ -27,9 +27,7 @@ namespace Wizcorp.MageSDK.MageClient
 		//
 		protected virtual string CommandPrefix
 		{
-			get {
-				return null;
-			}
+			get { return this.GetType().Name.ToLower(); }
 		}
 
 		//
