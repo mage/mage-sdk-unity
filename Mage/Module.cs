@@ -54,7 +54,8 @@ namespace Wizcorp.MageSDK.MageClient
 			}
 
 			StaticData = null;
-			Mage.Archivist.MGet(queries, null, (error, data) => {
+			Mage.Archivist.MGet(queries, null, (error, data) =>
+			{
 				if (error != null)
 				{
 					cb(error);
@@ -66,11 +67,13 @@ namespace Wizcorp.MageSDK.MageClient
 			});
 		}
 
-
 		//
 		protected virtual string CommandPrefix
 		{
-			get { return null; }
+			get
+			{
+				return this.GetType().Name.ToLower();
+			}
 		}
 
 		protected virtual List<string> Commands
@@ -93,8 +96,10 @@ namespace Wizcorp.MageSDK.MageClient
 
 		private void RegisterCommand(string command)
 		{
-			commandHandlerActions.Add(command, (arguments, commandCb) => {
-				Mage.CommandCenter.SendCommand(CommandPrefix + "." + command, arguments, (error, result) => {
+			commandHandlerActions.Add(command, (arguments, commandCb) =>
+			{
+				Mage.CommandCenter.SendCommand(CommandPrefix + "." + command, arguments, (error, result) =>
+				{
 					try
 					{
 						commandCb(error, result);
@@ -106,10 +111,12 @@ namespace Wizcorp.MageSDK.MageClient
 				});
 			});
 
-			commandHandlerFuncs.Add(command, arguments => {
+			commandHandlerFuncs.Add(command, arguments =>
+			{
 				var commandStatus = new UserCommandStatus();
 
-				Mage.CommandCenter.SendCommand(CommandPrefix + "." + command, arguments, (error, result) => {
+				Mage.CommandCenter.SendCommand(CommandPrefix + "." + command, arguments, (error, result) =>
+				{
 					commandStatus.Error = error;
 					commandStatus.Result = result;
 					commandStatus.Done = true;
