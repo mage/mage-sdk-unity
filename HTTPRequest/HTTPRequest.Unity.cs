@@ -107,7 +107,7 @@ namespace Wizcorp.MageSDK.Network.Http
 			if (request.error != null)
 			{
 				var statusCode = 0;
-				if (request.responseHeaders.ContainsKey("STATUS"))
+				if (request.responseHeaders != null && request.responseHeaders.ContainsKey("STATUS"))
 				{
 					statusCode = int.Parse(request.responseHeaders["STATUS"].Split(' ')[1]);
 				}
