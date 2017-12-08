@@ -137,6 +137,18 @@ namespace Wizcorp.MageSDK.Network.Http
 						cookies.SetCookies(requestUri, headerStr.Remove(0, 11));
 					}
 				}
+			} else {
+				if (Debug.IsDebugBuild) {
+					UnityEngine.Debug.LogWarning("mage-sdk: WWW does not have the responseHeadersString instance.");
+					UnityEngine.Debug.LogWarning("mage-sdk: We will not be able to read correctly duplicate headers in HTTP request responses");
+				}
+
+				string cookieHeader;
+				request.responseHeaders.TryGetValue("Set-Cookie", out cookieHeader);
+
+				if (cookieHeader != null) {
+					cookies.SetCookies(requestUri, cookieHeader);
+				}
 			}
 
 			cb(null, request.text);
