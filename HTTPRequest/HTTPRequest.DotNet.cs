@@ -1,6 +1,6 @@
 // IF WE ARE NOT USING UNITY OR WE HAVE DEFINED THE
 // MAGE_USE_WEBREQUEST MACROS, USE THIS VERSION
-#if !UNITY_5 || MAGE_USE_WEBREQUEST
+#if !UNITY_5_3_OR_NEWER || MAGE_USE_WEBREQUEST
 
 using System;
 using System.Collections;
@@ -76,7 +76,6 @@ namespace Wizcorp.MageSDK.Network.Http
 
 			// Setup private properties and fire off the request
 			this.cb = cb;
-			this.cookies = cookies;
 			this.request = httpRequest;
 
 			// Initiate response
