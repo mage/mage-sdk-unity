@@ -122,7 +122,7 @@ namespace Wizcorp.MageSDK.Log.Writers
 
 			// Otherwise log data as is using its ToString function
 			Type objectType = logData.GetType();
-			MethodInfo toStringMethod = objectType.GetMethod("ToString");
+			MethodInfo toStringMethod = objectType.GetMethod("ToString", Type.EmptyTypes);
 			return toStringMethod.Invoke(logData, null);
 		}
 
