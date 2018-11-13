@@ -134,8 +134,9 @@ namespace Wizcorp.MageSDK.Command.Client
 
 		private void SendRequest(string batchUrl, string postData, Dictionary<string, string> headers, Action<JArray> cb)
 		{
+			Logger.Verbose("Sending request: \"" + batchUrl + "\" " + postData);
 			HttpRequest.Post(batchUrl, "", postData, headers, Mage.Cookies, (requestError, responseString) => {
-				Logger.Verbose("Recieved response: " + responseString);
+				Logger.Verbose("Received response: " + responseString);
 
 				// Check if there was a transport error
 				if (requestError != null)
