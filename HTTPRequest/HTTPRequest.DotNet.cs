@@ -1,6 +1,6 @@
-// IF WE ARE NOT USING UNITY OR WE HAVE DEFINED THE
+﻿// IF WE ARE NOT USING UNITY OR WE HAVE DEFINED THE
 // MAGE_USE_WEBREQUEST MACROS, USE THIS VERSION
-#if !UNITY_5_3_OR_NEWER || MAGE_USE_WEBREQUEST
+#if MAGE_USE_WEBREQUEST
 
 using System;
 using System.Collections;
@@ -14,14 +14,16 @@ namespace Wizcorp.MageSDK.Network.Http
 {
 	public class HttpRequest
 	{
-		private HttpWebRequest request;
-		private CookieContainer cookies;
-		private Action<Exception, string> cb;
-		private Timer timeoutTimer;
+		private HttpWebRequest _request;
+		private Action<Exception, string> finalCb;
 
-		// Timeout setting for request
+		private Timer _timeoutTimer;
+
+		/// <summary>
+		/// Timeout setting for request
+		/// </summary>
 		private long _timeout = 100 * 1000;
-		public long timeout
+		public long Timeout
 		{
 			get
 			{
@@ -31,23 +33,32 @@ namespace Wizcorp.MageSDK.Network.Http
 			{
 				_timeout = value;
 
-				timeoutTimer.Dispose();
-				timeoutTimer = new Timer((object state) => {
-					this.Abort();
-					cb(new Exception("Request timed out"), null);
-				}, null, timeout, Timeout.Infinite);
+				if (_timeoutTimer != null) {
+					_timeoutTimer.Dispose();
+					_timeoutTimer = null;
+				}
+
+				_timeoutTimer = new Timer((object state) => {
+					Abort();
+					FinalCbMainThread(new HttpRequestException("Request timed out", 0), null);
+				}, null, Timeout, System.Threading.Timeout.Infinite);
 			}
 		}
 
 
-		// Constructor
+		/// <summary>
+		/// Constructor
+		/// </summary>
+		/// <param name="url"></param>
+		/// <param name="contentType"></param>
+		/// <param name="postData"></param>
+		/// <param name="headers"></param>
+		/// <param name="cookies"></param>
+		/// <param name="cb"></param>
 		public HttpRequest(string url, string contentType, byte[] postData, Dictionary<string, string> headers, CookieContainer cookies, Action<Exception, string> cb)
 		{
 			// Start timeout timer
-			timeoutTimer = new Timer((object state) => {
-				this.Abort();
-				cb(new HttpRequestException("Request timed out", 0), null);
-			}, null, timeout, Timeout.Infinite);
+			Timeout = _timeout;
 
 			// Initialize request instance
 			HttpWebRequest httpRequest = (HttpWebRequest)WebRequest.Create(url);
@@ -75,39 +86,37 @@ namespace Wizcorp.MageSDK.Network.Http
 			}
 
 			// Setup private properties and fire off the request
-			this.cb = cb;
-			this.request = httpRequest;
+			finalCb = cb;
+			_request = httpRequest;
 
 			// Initiate response
 			if (postData == null)
 			{
-				ReadResponseData(cb);
-				return;
+				ReadResponseData(FinalCbMainThread);
 			}
 			else
 			{
-				WritePostData(postData, (Exception requestError) => {
+				WritePostData(postData, (requestError) => {
 					if (requestError != null)
 					{
-						cb(requestError, null);
+						FinalCbMainThread(requestError, null);
 						return;
 					}
 
 					// Process the response
-					ReadResponseData(cb);
+					ReadResponseData(FinalCbMainThread);
 				});
-				return;
 			}
 		}
 
 
-		// Write post data to request buffer
+		// Write post data to request buffer asynchronously
 		private void WritePostData(byte[] postData, Action<Exception> cb)
 		{
-			request.BeginGetRequestStream((IAsyncResult callbackResult) => {
+			_request.BeginGetRequestStream((callbackResult) => {
 				try
 				{
-					Stream postStream = request.EndGetRequestStream(callbackResult);
+					Stream postStream = _request.EndGetRequestStream(callbackResult);
 					postStream.Write(postData, 0, postData.Length);
 					postStream.Close();
 				}
@@ -120,20 +129,20 @@ namespace Wizcorp.MageSDK.Network.Http
 			}, null);
 		}
 
-		// Read response data from request buffer
+		// Read response data from request buffer asynchronously
 		private void ReadResponseData(Action<Exception, string> cb)
 		{
 			// Begin waiting for a response
-			request.BeginGetResponse(new AsyncCallback((IAsyncResult callbackResult) => {
+			_request.BeginGetResponse((callbackResult) => {
 				// Cleanup timeout
-				timeoutTimer.Dispose();
-				timeoutTimer = null;
+				_timeoutTimer.Dispose();
+				_timeoutTimer = null;
 
 				// Process response
 				string responseString = null;
 				try
 				{
-					HttpWebResponse response = (HttpWebResponse)request.EndGetResponse(callbackResult);
+					HttpWebResponse response = (HttpWebResponse)_request.EndGetResponse(callbackResult);
 
 					using (StreamReader httpWebStreamReader = new StreamReader(response.GetResponseStream()))
 					{
@@ -149,28 +158,50 @@ namespace Wizcorp.MageSDK.Network.Http
 				}
 
 				cb(null, responseString);
-			}), null);
+			}, null);
 		}
 
+		// Calls the final callback on the main thread
+		private void FinalCbMainThread(Exception error, string response)
+		{
+			HttpRequestManager.Queue(FinalCbMainThreadEnumerator(error, response));
+		}
 
-		// Abort request
+		// Coroutine enumerator to achieve the above
+		private IEnumerator FinalCbMainThreadEnumerator(Exception error, string response)
+		{
+			finalCb(error, response);
+			yield break;
+		}
+
+		/// <summary>
+		/// Abort the request
+		/// </summary>
 		public void Abort()
 		{
-			if (request == null)
+			if (_request != null)
 			{
-				return;
+				HttpWebRequest _request = this._request;
+				this._request = null;
+				_request.Abort();
 			}
 
-			HttpWebRequest _request = request;
-			request = null;
-
-			_request.Abort();
-			timeoutTimer.Dispose();
-			timeoutTimer = null;
+			if (_timeoutTimer != null)
+			{
+				_timeoutTimer.Dispose();
+				_timeoutTimer = null;
+			}
 		}
 
 
-		// Create GET request and return it
+		/// <summary>
+		/// Create GET request and return it
+		/// </summary>
+		/// <param name="url"></param>
+		/// <param name="headers"></param>
+		/// <param name="cookies"></param>
+		/// <param name="cb"></param>
+		/// <returns></returns>
 		public static HttpRequest Get(string url, Dictionary<string, string> headers, CookieContainer cookies, Action<Exception, string> cb)
 		{
 			// Create request and return it
@@ -178,14 +209,32 @@ namespace Wizcorp.MageSDK.Network.Http
 			return new HttpRequest(url, null, null, headers, cookies, cb);
 		}
 
-		// Create POST request and return it
+		/// <summary>
+		/// Create POST request and return it
+		/// </summary>
+		/// <param name="url"></param>
+		/// <param name="contentType"></param>
+		/// <param name="postData"></param>
+		/// <param name="headers"></param>
+		/// <param name="cookies"></param>
+		/// <param name="cb"></param>
+		/// <returns></returns>
 		public static HttpRequest Post(string url, string contentType, string postData, Dictionary<string, string> headers, CookieContainer cookies, Action<Exception, string> cb)
 		{
 			byte[] binaryPostData = Encoding.UTF8.GetBytes(postData);
 			return Post(url, contentType, binaryPostData, headers, cookies, cb);
 		}
 
-		// Create POST request and return it
+		/// <summary>
+		/// Create POST request and return it
+		/// </summary>
+		/// <param name="url"></param>
+		/// <param name="contentType"></param>
+		/// <param name="postData"></param>
+		/// <param name="headers"></param>
+		/// <param name="cookies"></param>
+		/// <param name="cb"></param>
+		/// <returns></returns>
 		public static HttpRequest Post(string url, string contentType, byte[] postData, Dictionary<string, string> headers, CookieContainer cookies, Action<Exception, string> cb)
 		{
 			return new HttpRequest(url, contentType, postData, headers, cookies, cb);
