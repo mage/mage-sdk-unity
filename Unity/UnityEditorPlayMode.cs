@@ -13,14 +13,14 @@ namespace Wizcorp.MageSDK.Unity
 
 		static UnityEditorPlayMode()
 		{
-			EditorApplication.playmodeStateChanged += OnUnityPlayModeChanged;
+			EditorApplication.playModeStateChanged += OnUnityPlayModeChanged;
 			if (EditorApplication.isPaused)
 			{
 				currentState = EditorPlayModeState.Paused;
 			}
 		}
 
-		private static void OnUnityPlayModeChanged()
+		private static void OnUnityPlayModeChanged(PlayModeStateChange change)
 		{
 			var newState = EditorPlayModeState.Stopped;
 			switch (currentState)
