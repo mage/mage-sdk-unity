@@ -1,6 +1,6 @@
-// IF WE ARE USING UNITY AND WE HAVE NOT DEFINED THE
+﻿// IF WE ARE USING UNITY AND WE HAVE NOT DEFINED THE
 // MAGE_USE_WEBREQUEST MACROS, USE THIS VERSION
-#if UNITY_5_3_OR_NEWER && !MAGE_USE_WEBREQUEST
+#if !MAGE_USE_WEBREQUEST
 
 using System;
 using System.Collections;
@@ -8,34 +8,41 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Net;
 using System.Text;
-using System.Reflection;
-
-using UnityEngine;
 using System.Threading;
+using UnityEngine;
 
 namespace Wizcorp.MageSDK.Network.Http
 {
 	public class HttpRequest
 	{
-		private WWW request;
-		private CookieContainer cookies;
-		private Action<Exception, string> cb;
+		private WWW _request;
+		private CookieContainer _cookies;
+		private Action<Exception, string> finalCb;
 
-		// Timeout setting for request
+		/// <summary>
+		/// Timeout setting for request
+		/// </summary>
+		private Stopwatch _timeoutTimer = new Stopwatch();
 		public long Timeout = 100 * 1000;
-		private Stopwatch timeoutTimer = new Stopwatch();
 
 
-		// Constructor
+		/// <summary>
+		/// Constructor
+		/// </summary>
+		/// <param name="url"></param>
+		/// <param name="contentType"></param>
+		/// <param name="postData"></param>
+		/// <param name="headers"></param>
+		/// <param name="cookies"></param>
+		/// <param name="cb"></param>
 		public HttpRequest(string url, string contentType, byte[] postData, Dictionary<string, string> headers, CookieContainer cookies, Action<Exception, string> cb)
 		{
 			// Start timeout timer
-			timeoutTimer.Start();
+			_timeoutTimer.Start();
 
 			// Queue constructor for main thread execution
 			HttpRequestManager.Queue(Constructor(url, contentType, postData, headers, cookies, cb));
 		}
-
 
 		// Main thread constructor
 		private IEnumerator Constructor(string url, string contentType, byte[] postData, Dictionary<string, string> headers, CookieContainer cookies, Action<Exception, string> cb)
@@ -60,26 +67,25 @@ namespace Wizcorp.MageSDK.Network.Http
 			}
 
 			// Setup private properties and fire off the request
-			this.cb = cb;
-			this.cookies = cookies;
-			request = new WWW(url, postData, headersCopy);
+			finalCb = cb;
+			_cookies = cookies;
+			_request = new WWW(url, postData, headersCopy);
 
 			// Initiate response
 			HttpRequestManager.Queue(WaitLoop());
 			yield break;
 		}
 
-
 		// Wait for www request to complete with timeout checks
 		private IEnumerator WaitLoop()
 		{
-			while (request != null && !request.isDone)
+			while (_request != null && !_request.isDone)
 			{
-				if (timeoutTimer.ElapsedMilliseconds >= Timeout)
+				if (_timeoutTimer.ElapsedMilliseconds >= Timeout)
 				{
 					// Timed out abort the request with timeout error
 					Abort();
-					cb(new HttpRequestException("Request timed out", 0), null);
+					finalCb(new HttpRequestException("Request timed out", 0), null);
 					yield break;
 				}
 
@@ -88,86 +94,67 @@ namespace Wizcorp.MageSDK.Network.Http
 			}
 
 			// Check if we destroyed the request due to an abort
-			if (request == null)
+			if (_request == null)
 			{
 				yield break;
 			}
 
 			// Cleanup timeout
-			timeoutTimer.Stop();
-			timeoutTimer = null;
+			_timeoutTimer.Stop();
+			_timeoutTimer = null;
 
 			// Check if there is a callback
-			if (cb == null)
-			{
+			if (finalCb == null) {
 				yield break;
 			}
 
 			// Check if there was an error with the request
-			if (request.error != null)
+			if (_request.error != null)
 			{
 				var statusCode = 0;
-				if (request.responseHeaders != null && request.responseHeaders.ContainsKey("STATUS"))
+				if (_request.responseHeaders != null && _request.responseHeaders.ContainsKey("STATUS"))
 				{
-					statusCode = int.Parse(request.responseHeaders["STATUS"].Split(' ')[1]);
+					statusCode = int.Parse(_request.responseHeaders["STATUS"].Split(' ')[1]);
 				}
 
-				cb(new HttpRequestException(request.error, statusCode), null);
+				finalCb(new HttpRequestException(_request.error, statusCode), null);
 				yield break;
 			}
 
 			// Otherwise check for cookies and return the response
-			// HACK: we need to use reflection as cookieContainer
-			// junks same key cookies as it uses a dictionary. To
-			// work around this we use reflection to get the original
-			// cookie response text, which isn't exposed, and parse
-			// it ourselves
-			Uri requestUri = new Uri(request.url);
-			PropertyInfo pinfoHeadersString = typeof(WWW).GetProperty("responseHeadersString", BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance);
+			// NOTE: this does not support multiple cookies as the WWW class headers are stored in a
+			// dictionary. Previously we used reflection to extract the raw headers string and passed
+			// the set-cookie headers out, however since change of the Unity WWW class to use
+			// UnityWebReuqest internally, we no longer have access to this raw string and have no
+			// means to resolve this issue.
+			string cookieHeader;
+			_request.responseHeaders.TryGetValue("Set-Cookie", out cookieHeader);
 
-			if (pinfoHeadersString != null)
+			if (cookieHeader != null)
 			{
-				string headersString = pinfoHeadersString.GetValue(request, null) as string;
-				string[] headerLines = headersString.Split('\n');
-
-				foreach (string headerStr in headerLines)
-				{
-					if (headerStr.StartsWith("set-cookie:", true, null))
-					{
-						cookies.SetCookies(requestUri, headerStr.Remove(0, 11));
-					}
-				}
-			} else {
-				if (Debug.IsDebugBuild) {
-					UnityEngine.Debug.LogWarning("mage-sdk: WWW does not have the responseHeadersString instance.");
-					UnityEngine.Debug.LogWarning("mage-sdk: We will not be able to read correctly duplicate headers in HTTP request responses");
-				}
-
-				string cookieHeader;
-				request.responseHeaders.TryGetValue("Set-Cookie", out cookieHeader);
-
-				if (cookieHeader != null) {
-					cookies.SetCookies(requestUri, cookieHeader);
-				}
+				Uri requestUri = new Uri(_request.url);
+				_cookies.SetCookies(requestUri, cookieHeader);
 			}
 
-			cb(null, request.text);
+			finalCb(null, _request.text);
 		}
 
-
-		// Abort request
+		/// <summary>
+		/// Abort the request
+		/// </summary>
 		public void Abort()
 		{
-			if (request == null)
+			if (_request != null)
 			{
-				return;
+				DisposeWWWInBackground(_request);
+				_request = null;
 			}
 
-			DisposeWWWInBackground(request);
-			request = null;
-
-			timeoutTimer.Stop();
-			timeoutTimer = null;
+			if (_timeoutTimer != null)
+			{
+				_timeoutTimer.Stop();
+				_timeoutTimer = null;
+			}
 		}
 
 		// Hack : I Feel bad for that ... I'm sorry but it's the faster way we found to fix an android bug
@@ -182,7 +169,15 @@ namespace Wizcorp.MageSDK.Network.Http
 			#endif
 		}
 
-		// Create GET request and return it
+
+		/// <summary>
+		/// Create GET request and return it
+		/// </summary>
+		/// <param name="url"></param>
+		/// <param name="headers"></param>
+		/// <param name="cookies"></param>
+		/// <param name="cb"></param>
+		/// <returns></returns>
 		public static HttpRequest Get(string url, Dictionary<string, string> headers, CookieContainer cookies, Action<Exception, string> cb)
 		{
 			// Create request and return it
@@ -190,7 +185,16 @@ namespace Wizcorp.MageSDK.Network.Http
 			return new HttpRequest(url, null, null, headers, cookies, cb);
 		}
 
-		// Create POST request and return it
+		/// <summary>
+		/// Create POST request and return it
+		/// </summary>
+		/// <param name="url"></param>
+		/// <param name="contentType"></param>
+		/// <param name="postData"></param>
+		/// <param name="headers"></param>
+		/// <param name="cookies"></param>
+		/// <param name="cb"></param>
+		/// <returns></returns>
 		public static HttpRequest Post(
 			string url, string contentType, string postData, Dictionary<string, string> headers, CookieContainer cookies,
 			Action<Exception, string> cb)
@@ -199,7 +203,16 @@ namespace Wizcorp.MageSDK.Network.Http
 			return Post(url, contentType, binaryPostData, headers, cookies, cb);
 		}
 
-		// Create POST request and return it
+		/// <summary>
+		/// Create POST request and return it
+		/// </summary>
+		/// <param name="url"></param>
+		/// <param name="contentType"></param>
+		/// <param name="postData"></param>
+		/// <param name="headers"></param>
+		/// <param name="cookies"></param>
+		/// <param name="cb"></param>
+		/// <returns></returns>
 		public static HttpRequest Post(
 			string url, string contentType, byte[] postData, Dictionary<string, string> headers, CookieContainer cookies,
 			Action<Exception, string> cb)
@@ -208,5 +221,4 @@ namespace Wizcorp.MageSDK.Network.Http
 		}
 	}
 }
-
 #endif
