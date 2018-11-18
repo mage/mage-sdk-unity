@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Text;
 
@@ -39,34 +39,43 @@ namespace Wizcorp.MageSDK.MageClient.Message
 
 
 		//
-		private void InitializeMessageList()
+		private void Initialize()
 		{
+			// Stop the transport client if it exists
+			if (transportClient != null)
+			{
+				transportClient.Stop();
+			}
+
+			// Reset the session key
+			sessionKey = null;
+
+			// Initialize the message queue
 			currentMessageId = -1;
 			largestMessageId = -1;
 			messageQueue = new Dictionary<int, JToken>();
 			confirmIds = new List<string>();
 
-			Logger.Debug("Initialized message queue");
+			Logger.Debug("(Re)Initialized message queue");
 		}
 
 
 		// Constructor
 		public MessageStream(TransportType transport = TransportType.LONGPOLLING)
 		{
-			//
-			InitializeMessageList();
-
 			// Start transport client when session is acquired
 			Mage.EventManager.On("session.set", (sender, session) => {
+				// Make sure we re-initialize between multiple session sets to prevent stale requests
+				Initialize();
+
+				// Setup key and start stream
 				sessionKey = UnityEngine.WWW.EscapeURL(session["key"].ToString());
 				transportClient.Start();
 			});
 
 			// Stop the message client when session is lost
 			Mage.EventManager.On("session.unset", (sender, reason) => {
-				transportClient.Stop();
-				InitializeMessageList();
-				sessionKey = null;
+				Initialize();
 			});
 
 			// Also stop the message client when the application is stopped
@@ -74,9 +83,7 @@ namespace Wizcorp.MageSDK.MageClient.Message
 			UnityEditorPlayMode.OnEditorModeChanged += newState => {
 				if (newState == EditorPlayModeState.Stopped)
 				{
-					transportClient.Stop();
-					InitializeMessageList();
-					sessionKey = null;
+					Initialize();
 				}
 				if (newState == EditorPlayModeState.Paused && transportClient.running)
 				{
@@ -108,14 +115,7 @@ namespace Wizcorp.MageSDK.MageClient.Message
 		//
 		public void Dispose()
 		{
-			// Stop the transport client if it exists
-			if (transportClient != null)
-			{
-				transportClient.Stop();
-			}
-
-			InitializeMessageList();
-			sessionKey = null;
+			Initialize();
 		}
 
 
