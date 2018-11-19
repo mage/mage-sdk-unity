@@ -1,6 +1,5 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
-using System.Text;
 
 using Newtonsoft.Json.Linq;
 
@@ -38,35 +37,44 @@ namespace Wizcorp.MageSDK.MageClient.Message
 		private List<string> confirmIds;
 
 
-		//
-		private void InitializeMessageList()
+		// Resets the stream system
+		private void Reset()
 		{
+			// Stop the transport client if it exists
+			if (transportClient != null)
+			{
+				transportClient.Stop();
+			}
+
+			// Reset the session key
+			sessionKey = null;
+
+			// Initialize the message queue
 			currentMessageId = -1;
 			largestMessageId = -1;
 			messageQueue = new Dictionary<int, JToken>();
 			confirmIds = new List<string>();
 
-			Logger.Debug("Initialized message queue");
+			Logger.Debug("Message stream system reset");
 		}
 
 
 		// Constructor
 		public MessageStream(TransportType transport = TransportType.LONGPOLLING)
 		{
-			//
-			InitializeMessageList();
-
 			// Start transport client when session is acquired
 			Mage.EventManager.On("session.set", (sender, session) => {
+				// Make sure we re-initialize between multiple session sets to prevent stale requests
+				Reset();
+
+				// Setup key and start stream
 				sessionKey = UnityEngine.WWW.EscapeURL(session["key"].ToString());
 				transportClient.Start();
 			});
 
 			// Stop the message client when session is lost
 			Mage.EventManager.On("session.unset", (sender, reason) => {
-				transportClient.Stop();
-				InitializeMessageList();
-				sessionKey = null;
+				Reset();
 			});
 
 			// Also stop the message client when the application is stopped
@@ -74,9 +82,7 @@ namespace Wizcorp.MageSDK.MageClient.Message
 			UnityEditorPlayMode.OnEditorModeChanged += newState => {
 				if (newState == EditorPlayModeState.Stopped)
 				{
-					transportClient.Stop();
-					InitializeMessageList();
-					sessionKey = null;
+					Reset();
 				}
 				if (newState == EditorPlayModeState.Paused && transportClient.running)
 				{
@@ -105,17 +111,10 @@ namespace Wizcorp.MageSDK.MageClient.Message
 		}
 
 
-		//
+		// This method is called when this instance of MessageStream is no longer required
 		public void Dispose()
 		{
-			// Stop the transport client if it exists
-			if (transportClient != null)
-			{
-				transportClient.Stop();
-			}
-
-			InitializeMessageList();
-			sessionKey = null;
+			Reset();
 		}
 
 
