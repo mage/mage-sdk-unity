@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Text;
 
 using Newtonsoft.Json.Linq;
 
@@ -38,8 +37,8 @@ namespace Wizcorp.MageSDK.MageClient.Message
 		private List<string> confirmIds;
 
 
-		//
-		private void Initialize()
+		// Resets the stream system
+		private void Reset()
 		{
 			// Stop the transport client if it exists
 			if (transportClient != null)
@@ -56,7 +55,7 @@ namespace Wizcorp.MageSDK.MageClient.Message
 			messageQueue = new Dictionary<int, JToken>();
 			confirmIds = new List<string>();
 
-			Logger.Debug("(Re)Initialized message queue");
+			Logger.Debug("Message stream system reset");
 		}
 
 
@@ -66,7 +65,7 @@ namespace Wizcorp.MageSDK.MageClient.Message
 			// Start transport client when session is acquired
 			Mage.EventManager.On("session.set", (sender, session) => {
 				// Make sure we re-initialize between multiple session sets to prevent stale requests
-				Initialize();
+				Reset();
 
 				// Setup key and start stream
 				sessionKey = UnityEngine.WWW.EscapeURL(session["key"].ToString());
@@ -75,7 +74,7 @@ namespace Wizcorp.MageSDK.MageClient.Message
 
 			// Stop the message client when session is lost
 			Mage.EventManager.On("session.unset", (sender, reason) => {
-				Initialize();
+				Reset();
 			});
 
 			// Also stop the message client when the application is stopped
@@ -83,7 +82,7 @@ namespace Wizcorp.MageSDK.MageClient.Message
 			UnityEditorPlayMode.OnEditorModeChanged += newState => {
 				if (newState == EditorPlayModeState.Stopped)
 				{
-					Initialize();
+					Reset();
 				}
 				if (newState == EditorPlayModeState.Paused && transportClient.running)
 				{
@@ -112,10 +111,10 @@ namespace Wizcorp.MageSDK.MageClient.Message
 		}
 
 
-		//
+		// This method is called when this instance of MessageStream is no longer required
 		public void Dispose()
 		{
-			Initialize();
+			Reset();
 		}
 
 
