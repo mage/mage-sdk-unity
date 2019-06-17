@@ -1,9 +1,5 @@
-using System;
-using System.Collections;
-using System.Collections.Generic;
-
 using Newtonsoft.Json.Linq;
-
+using System;
 using Wizcorp.MageSDK.Log;
 using Wizcorp.MageSDK.Utils;
 
@@ -27,7 +23,10 @@ namespace Wizcorp.MageSDK.MageClient
 		//
 		protected virtual string CommandPrefix
 		{
-			get { return this.GetType().Name.ToLower(); }
+			get {
+				var name = GetType().Name;
+				return name.Substring(0, 1).ToLower() + name.Substring(1);
+			}
 		}
 
 		//
