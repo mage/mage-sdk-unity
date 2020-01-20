@@ -117,7 +117,7 @@ namespace Wizcorp.MageSDK.Network.Http
 					statusCode = int.Parse(_request.responseHeaders["STATUS"].Split(' ')[1]);
 				}
 
-				finalCb(new HttpRequestException(_request.error, statusCode), null);
+				finalCb(new HttpRequestException(_request.error, statusCode), _request.text);
 				yield break;
 			}
 

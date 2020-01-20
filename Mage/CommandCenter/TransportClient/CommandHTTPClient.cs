@@ -166,6 +166,11 @@ namespace Wizcorp.MageSDK.Command.Client
 					return;
 				}
 
+				if (responseArray[0].Type != JTokenType.Null) {
+					String error = responseArray[0].Value<String>();
+					OnTransportError.Invoke(error, requestError);
+				}
+
 				// Let CommandCenter know this batch was successful
 				OnSendComplete.Invoke();
 
