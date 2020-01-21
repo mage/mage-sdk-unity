@@ -166,9 +166,12 @@ namespace Wizcorp.MageSDK.Command.Client
 					return;
 				}
 
-				if (responseArray[0].Type != JTokenType.Null) {
-					String error = responseArray[0].Value<String>();
-					OnTransportError.Invoke(error, requestError);
+				foreach(JArray response in responseArray)
+				{
+					if (response.Count > 0 && response.First.Type == JTokenType.String) {
+						String error = response.First.Value<String>();
+						OnTransportError.Invoke(error, requestError);
+					}
 				}
 
 				// Let CommandCenter know this batch was successful
